@@ -17,7 +17,6 @@ MVP dashboard sections:
 - Continue where you left off
 - Recently active notes
 - Top categories today/this week
-- Review queue
 - Daily recap preview
 
 Avoid useless vanity metrics in MVP:

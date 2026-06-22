@@ -15,12 +15,11 @@ import {
   CardHeader,
 } from "../../../shared/components/ui/card";
 import { useUiStore } from "../../../shared/store/ui.store";
-import { categories } from "../../categories/api/categories.api";
+import { mockCategories as categories } from "../../categories/api/categories.mock";
 import { CategoryIcon } from "../../categories/components/CategoryIcon";
 import { notes } from "../../notes/api/notes.api";
 import { ContinueCard } from "../components/ContinueCard";
 import { DashboardSearch } from "../components/DashboardSearch";
-import { ReviewQueue } from "../components/ReviewQueue";
 
 const today = notes.slice(0, 3);
 const recent = notes.slice(1, 5);
@@ -36,7 +35,7 @@ const topCategories = categories
 export function DashboardPage() {
   const openNote = (id: string) => useUiStore.getState().selectNote(id);
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-8">
+    <div className="mx-auto max-w-7xl space-y-6 p-8">
       <DashboardSearch />
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_.9fr]">
         <div className="space-y-6">
@@ -169,7 +168,6 @@ export function DashboardPage() {
               ))}
             </CardContent>
           </Card>
-          <ReviewQueue notes={[notes[4], notes[2]]} />
           <Card className="overflow-hidden border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">

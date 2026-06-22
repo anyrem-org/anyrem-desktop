@@ -5,7 +5,10 @@ import { Button } from "../../../shared/components/ui/button";
 import { Card, CardContent } from "../../../shared/components/ui/card";
 import { Input } from "../../../shared/components/ui/input";
 import { Label } from "../../../shared/components/ui/label";
+import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { useAuthStore } from "../store/auth.store";
+import { useLogin } from "../hooks/useAuth";
+import { getApiErrorMessage } from "../../../shared/lib/api-client";
 
 function GoogleIcon() {
   return (
@@ -32,8 +35,7 @@ function GoogleIcon() {
 
 export function LoginPage() {
   const user = useAuthStore((state) => state.user);
-  const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
-  const loginWithEmail = useAuthStore((state) => state.loginWithEmail);
+  const login = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -41,15 +43,13 @@ export function LoginPage() {
   const location = useLocation();
   const destination = (location.state as { from?: string } | null)?.from ?? "/";
   if (user) return <Navigate to="/" replace />;
-  const google = () => {
-    loginWithGoogle();
-    navigate(destination, { replace: true });
-  };
-  const emailLogin = (event: FormEvent) => {
+  const emailLogin = async (event: FormEvent) => {
     event.preventDefault();
     if (!email || !password) return;
-    loginWithEmail(email);
-    navigate(destination, { replace: true });
+    try {
+      await login.mutateAsync({ email, password, deviceName: "AnyRem Desktop" });
+      navigate(destination, { replace: true });
+    } catch { /* mutation state renders error */ }
   };
   return (
     <main className="grid min-h-screen grid-cols-[1fr_560px] bg-slate-950">
@@ -93,7 +93,7 @@ export function LoginPage() {
                 Sign in to continue to your memories.
               </p>
             </div>
-            <Button variant="outline" className="w-full" onClick={google}>
+            <Button variant="outline" className="w-full" disabled title="Google sign-in comes later">
               <GoogleIcon /> Continue with Google
             </Button>
             <div className="my-6 flex items-center gap-3">
@@ -156,10 +156,11 @@ export function LoginPage() {
                   </button>
                 </div>
               </div>
-              <Button className="w-full">Sign in</Button>
+              {login.isError && <ErrorMessage message={getApiErrorMessage(login.error)} />}
+              <Button className="w-full" disabled={login.isPending}>{login.isPending ? "Signing in…" : "Sign in"}</Button>
             </form>
             <p className="mb-0 mt-6 text-center text-xs text-muted-foreground">
-              Mock authentication for frontend preview.
+              Use your verified Remember Anything account.
             </p>
           </CardContent>
         </Card>

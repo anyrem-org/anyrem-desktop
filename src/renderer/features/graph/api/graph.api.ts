@@ -1,4 +1,4 @@
-import { categories } from "../../categories/api/categories.api";
+import { mockCategories as categories } from "../../categories/api/categories.mock";
 import { notes } from "../../notes/api/notes.api";
 
 export type MemoryGraphRelation = {

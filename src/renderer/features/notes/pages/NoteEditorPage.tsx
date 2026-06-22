@@ -23,6 +23,7 @@ import {
   List,
   ListOrdered,
   Quote,
+  Plus,
   Redo2,
   Save,
   Strikethrough,
@@ -30,18 +31,19 @@ import {
   Underline as UnderlineIcon,
   Undo2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { MultiSelect } from "../../../shared/components/MultiSelect";
+import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { Button } from "../../../shared/components/ui/button";
 import { Card } from "../../../shared/components/ui/card";
 import { Input } from "../../../shared/components/ui/input";
 import { Label } from "../../../shared/components/ui/label";
+import { getApiErrorMessage } from "../../../shared/lib/api-client";
 import { cn } from "../../../shared/lib/utils";
-import {
-  categories,
-  searchCategories,
-} from "../../categories/api/categories.api";
-import { notes, searchRelatedNotes } from "../api/notes.api";
+import { CategoryFormDialog } from "../../categories/components/CategoryFormDialog";
+import { useGetCategories } from "../../categories/hooks/useCategories";
+import { useCreateNote, useGetNote, useGetNotes, useUpdateNote } from "../hooks/useNotes";
 
 type Tool = {
   icon: typeof Bold;
@@ -49,23 +51,19 @@ type Tool = {
   active?: () => boolean;
   run: () => void;
 };
-const searchCategoryOptions = async (query: string) =>
-  (await searchCategories(query)).map((item) => ({
-    value: item.id,
-    label: item.name,
-    color: item.color,
-    description: item.description,
-  }));
-const searchRelatedOptions = async (query: string) =>
-  (await searchRelatedNotes(query)).map((item) => ({
-    value: item.id,
-    label: item.title,
-    description: item.category,
-  }));
-
 export function NoteEditorPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [title, setTitle] = useState("");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const { data: categoryItems = [] } = useGetCategories();
   const [relatedIds, setRelatedIds] = useState<string[]>([]);
+  const existing = useGetNote(id);
+  // ponytail: local selector covers first 100 notes; switch to async search when needed.
+  const noteList = useGetNotes({ page: 1, limit: 100 });
+  const create = useCreateNote();
+  const update = useUpdateNote();
+  const initialized = useRef(false);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -83,6 +81,22 @@ export function NoteEditorPage() {
       TableCell,
     ],
   });
+  useEffect(() => {
+    if (!editor || !existing.data || initialized.current) return;
+    initialized.current = true;
+    setTitle(existing.data.title);
+    setCategoryIds(existing.data.categoryIds);
+    setRelatedIds(existing.data.relatedIds);
+    editor.commands.setContent(existing.data.contentJson);
+  }, [editor, existing.data]);
+  const mutation = id ? update : create;
+  const save = () => {
+    if (!editor || !title.trim()) return;
+    const input = { title: title.trim(), contentJson: editor.getJSON(), categoryIds, relatedIds };
+    const onSuccess = (note: { id: string }) => navigate(`/notes/${note.id}`);
+    if (id) update.mutate({ id, input }, { onSuccess });
+    else create.mutate(input, { onSuccess });
+  };
   const setLink = () => {
     const href = window.prompt("Link URL");
     if (href)
@@ -205,52 +219,71 @@ export function NoteEditorPage() {
       ]
     : [];
   return (
-    <div className="mx-auto max-w-5xl p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto flex h-full min-h-0 max-w-7xl flex-col p-8">
+      <div className="mb-6 shrink-0 flex items-center justify-between">
         <div>
-          <h2 className="mb-1 text-2xl">Create a new memory</h2>
+          <h2 className="mb-1 text-2xl">{id ? "Edit memory" : "Create a new memory"}</h2>
           <p className="m-0 text-sm text-muted-foreground">
             Keep it useful, not perfect.
           </p>
         </div>
-        <Button>
-          <Save size={16} /> Save memory
+        <Button onClick={save} disabled={mutation.isPending || !title.trim()}>
+          <Save size={16} /> {mutation.isPending ? "Saving…" : "Save memory"}
         </Button>
       </div>
-      <Card className="overflow-hidden">
-        <Input
-          className="h-auto rounded-none border-0 border-b px-7 py-6 text-2xl font-bold shadow-none focus-visible:ring-0"
-          placeholder="Memory title"
-        />
-        <div className="flex flex-wrap items-center gap-1 border-b bg-muted/40 px-4 py-2">
-          {tools.map((tool, index) =>
-            tool === "divider" ? (
-              <span key={index} className="mx-1 h-6 w-px bg-border" />
-            ) : (
-              <Button
-                key={tool.label}
-                type="button"
-                title={tool.label}
-                variant="ghost"
-                size="icon"
-                onClick={tool.run}
-                className={cn(
-                  "size-8",
-                  tool.active?.() && "bg-accent text-accent-foreground",
-                )}
-              >
-                <tool.icon size={16} />
-              </Button>
-            ),
-          )}
+      {mutation.isError ? (
+        <ErrorMessage message={getApiErrorMessage(mutation.error)} className="mb-4 shrink-0" />
+      ) : null}
+      {existing.isError ? (
+        <ErrorMessage message={getApiErrorMessage(existing.error)} className="mb-4 shrink-0" />
+      ) : null}
+      {id && existing.isPending ? <div className="shrink-0 p-8 text-sm text-muted-foreground">Loading memory…</div> : null}
+      <Card className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div className="shrink-0 bg-white">
+          <Input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            className="h-auto rounded-none border-0 border-b px-7 py-6 text-2xl font-bold shadow-none focus-visible:ring-0"
+            placeholder="Memory title"
+          />
+          <div className="flex flex-wrap items-center gap-1 border-b bg-muted/40 px-4 py-2">
+            {tools.map((tool, index) =>
+              tool === "divider" ? (
+                <span key={index} className="mx-1 h-6 w-px bg-border" />
+              ) : (
+                <Button
+                  key={tool.label}
+                  type="button"
+                  title={tool.label}
+                  variant="ghost"
+                  size="icon"
+                  onClick={tool.run}
+                  className={cn(
+                    "size-8",
+                    tool.active?.() && "bg-accent text-accent-foreground",
+                  )}
+                >
+                  <tool.icon size={16} />
+                </Button>
+              ),
+            )}
+          </div>
         </div>
-        <EditorContent editor={editor} className="px-7 py-4" />
+        <EditorContent editor={editor} className="note-editor min-h-0 flex-1 overflow-hidden px-7 py-4" />
       </Card>
-      <div className="mt-4 grid grid-cols-2 gap-4">
+      <div className="mt-4 shrink-0 grid grid-cols-2 gap-4">
         <Card className="p-4">
-          <Label className="mb-2 block">Categories</Label>
+          <div className="mb-2 flex items-center justify-between">
+            <Label>Categories</Label>
+            <CategoryFormDialog
+              trigger={<Button type="button" variant="ghost" size="sm"><Plus size={14} /> New category</Button>}
+              onSaved={(category) => {
+                setCategoryIds((ids) => [...ids, category.id]);
+              }}
+            />
+          </div>
           <MultiSelect
-            options={categories.map((item) => ({
+            options={categoryItems.map((item) => ({
               value: item.id,
               label: item.name,
               color: item.color,
@@ -260,13 +293,12 @@ export function NoteEditorPage() {
             onChange={setCategoryIds}
             placeholder="Choose one or more categories"
             searchKey="categories"
-            onSearch={searchCategoryOptions}
           />
         </Card>
         <Card className="p-4">
           <Label className="mb-2 block">Related memories</Label>
           <MultiSelect
-            options={notes.map((item) => ({
+            options={(noteList.data?.items ?? []).filter((item) => item.id !== id).map((item) => ({
               value: item.id,
               label: item.title,
               description: item.category,
@@ -276,7 +308,6 @@ export function NoteEditorPage() {
             placeholder="Link existing memories"
             maxVisible={3}
             searchKey="related-memories"
-            onSearch={searchRelatedOptions}
           />
         </Card>
       </div>

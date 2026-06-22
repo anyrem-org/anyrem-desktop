@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../features/auth/store/auth.store";
+import { useLogout } from "../features/auth/hooks/useAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +33,7 @@ export function TopHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const logout = useLogout();
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const toggleActivity = useUiStore((state) => state.toggleActivity);
   return (
@@ -103,8 +104,7 @@ export function TopHeader() {
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onSelect={() => {
-                logout();
-                navigate("/login", { replace: true });
+                logout.mutate(undefined, { onSettled: () => navigate("/login", { replace: true }) });
               }}
             >
               <LogOut size={15} /> Log out

@@ -76,7 +76,7 @@ export function MultiSelect({
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search on server..."
+              placeholder={onSearch ? "Search on server..." : "Search..."}
               className="h-9 pl-8 pr-8"
             />
             {isFetching && (

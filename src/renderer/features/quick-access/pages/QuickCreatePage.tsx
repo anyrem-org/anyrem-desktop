@@ -9,54 +9,221 @@ import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { AlignCenter, AlignLeft, AlignRight, Bold, Check, Code, Heading1, Heading2, Highlighter, Italic, Link2, List, ListOrdered, Quote, Redo2, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, Bold, Check, Code, Heading1, Heading2, Highlighter, Italic, Link2, List, ListOrdered, Plus, Quote, Redo2, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MultiSelect } from '../../../shared/components/MultiSelect';
+import { ErrorMessage } from '../../../shared/components/ErrorMessage';
 import { Button } from '../../../shared/components/ui/button';
 import { Input } from '../../../shared/components/ui/input';
 import { Label } from '../../../shared/components/ui/label';
+import { getApiErrorMessage } from '../../../shared/lib/api-client';
 import { cn } from '../../../shared/lib/utils';
-import { categories, searchCategories } from '../../categories/api/categories.api';
-import { notes, searchRelatedNotes } from '../../notes/api/notes.api';
+import { CategoryFormDialog } from '../../categories/components/CategoryFormDialog';
+import { useGetCategories } from '../../categories/hooks/useCategories';
+import { useCreateNote, useGetNotes } from '../../notes/hooks/useNotes';
 
-const categoryOptions = categories.map((item) => ({value: item.id, label: item.name, color: item.color, description: item.description}));
-const relatedOptions = notes.map((item) => ({value: item.id, label: item.title, description: item.category}));
-const searchCategoryOptions = async (query: string) => (await searchCategories(query)).map((item) => ({value: item.id, label: item.name, color: item.color, description: item.description}));
-const searchRelatedOptions = async (query: string) => (await searchRelatedNotes(query)).map((item) => ({value: item.id, label: item.title, description: item.category}));
+type Tool = {
+  icon: typeof Bold;
+  label: string;
+  active?: () => boolean;
+  run: () => void;
+};
 
 export function QuickCreatePage() {
+  const categories = useGetCategories();
+  const categoryOptions = (categories.data ?? []).map((item) => ({
+    value: item.id,
+    label: item.name,
+    color: item.color,
+    description: item.description,
+  }));
   const [title, setTitle] = useState('');
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [relatedIds, setRelatedIds] = useState<string[]>([]);
-  const editor = useEditor({extensions: [StarterKit, Underline, Highlight, Link.configure({openOnClick: false}), TextAlign.configure({types: ['heading', 'paragraph']}), Placeholder.configure({placeholder: 'Write the useful part...' }), Table.configure({resizable: true}), TableRow, TableHeader, TableCell]});
-  const save = () => { if (!editor?.getText().trim()) return; window.desktop?.saveQuickNote({title: title.trim() || 'Untitled memory', content: editor.getHTML(), categoryIds, relatedIds}); };
+  // ponytail: local selector covers first 100 notes; switch to async search when needed.
+  const noteList = useGetNotes({ page: 1, limit: 100 });
+  const create = useCreateNote();
+  const relatedOptions = (noteList.data?.items ?? []).map((item) => ({
+    value: item.id,
+    label: item.title,
+    description: item.category,
+  }));
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Highlight,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Link.configure({ openOnClick: false }),
+      Placeholder.configure({
+        placeholder:
+          'Start writing. Capture the useful part before it disappears…',
+      }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
+  });
+  const resetDraft = () => {
+    setTitle('');
+    setCategoryIds([]);
+    setRelatedIds([]);
+    editor?.commands.clearContent(true);
+    create.reset();
+  };
+  const close = () => {
+    resetDraft();
+    window.desktop?.closeQuickWindow();
+    window.close();
+  };
+  const save = () => {
+    if (!editor || !title.trim()) return;
+    create.mutate(
+      {
+        title: title.trim(),
+        contentJson: editor.getJSON(),
+        categoryIds,
+        relatedIds,
+      },
+      { onSuccess: () => close() },
+    );
+  };
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') window.desktop?.closeQuickWindow();
-      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); save(); }
+      if (event.key === 'Escape') close();
+      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        save();
+      }
     };
-    window.addEventListener('keydown', keydown); return () => window.removeEventListener('keydown', keydown);
+    window.addEventListener('keydown', keydown);
+    return () => window.removeEventListener('keydown', keydown);
   });
-  const setLink = () => { const href = window.prompt('Link URL'); if (href) editor?.chain().focus().extendMarkRange('link').setLink({href}).run(); };
-  const tools = editor ? [
-    [Undo2, 'Undo', false, () => editor.chain().focus().undo().run()],
-    [Redo2, 'Redo', false, () => editor.chain().focus().redo().run()],
-    [Heading1, 'Heading 1', editor.isActive('heading', {level: 1}), () => editor.chain().focus().toggleHeading({level: 1}).run()],
-    [Heading2, 'Heading 2', editor.isActive('heading', {level: 2}), () => editor.chain().focus().toggleHeading({level: 2}).run()],
-    [Bold, 'Bold', editor.isActive('bold'), () => editor.chain().focus().toggleBold().run()],
-    [Italic, 'Italic', editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run()],
-    [UnderlineIcon, 'Underline', editor.isActive('underline'), () => editor.chain().focus().toggleUnderline().run()],
-    [Strikethrough, 'Strike', editor.isActive('strike'), () => editor.chain().focus().toggleStrike().run()],
-    [Highlighter, 'Highlight', editor.isActive('highlight'), () => editor.chain().focus().toggleHighlight().run()],
-    [Link2, 'Link', editor.isActive('link'), setLink],
-    [List, 'Bullet list', editor.isActive('bulletList'), () => editor.chain().focus().toggleBulletList().run()],
-    [ListOrdered, 'Numbered list', editor.isActive('orderedList'), () => editor.chain().focus().toggleOrderedList().run()],
-    [Quote, 'Quote', editor.isActive('blockquote'), () => editor.chain().focus().toggleBlockquote().run()],
-    [Code, 'Code block', editor.isActive('codeBlock'), () => editor.chain().focus().toggleCodeBlock().run()],
-    [AlignLeft, 'Align left', editor.isActive({textAlign: 'left'}), () => editor.chain().focus().setTextAlign('left').run()],
-    [AlignCenter, 'Align center', editor.isActive({textAlign: 'center'}), () => editor.chain().focus().setTextAlign('center').run()],
-    [AlignRight, 'Align right', editor.isActive({textAlign: 'right'}), () => editor.chain().focus().setTextAlign('right').run()],
-    [Table2, 'Table', editor.isActive('table'), () => editor.chain().focus().insertTable({rows: 3, cols: 3, withHeaderRow: true}).run()],
-  ] as const : [];
-  return <main className="h-screen overflow-hidden bg-[#f7f8fc] p-3"><section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl"><header className="window-drag flex h-14 shrink-0 items-center border-b px-4"><div><h1 className="m-0 text-sm font-semibold">Quick create</h1><p className="m-0 text-[11px] text-muted-foreground">Rich capture without opening the full app.</p></div><Button size="sm" className="window-no-drag ml-auto" onClick={save} disabled={!editor?.getText().trim()}><Check size={15}/> Save</Button><button onClick={() => window.desktop?.closeQuickWindow()} className="window-no-drag ml-2 rounded-lg border-0 bg-transparent p-2 text-muted-foreground hover:bg-muted" aria-label="Close"><X size={17}/></button></header><Input autoFocus value={title} onChange={(event) => setTitle(event.target.value)} className="h-12 shrink-0 rounded-none border-0 border-b px-5 text-lg font-semibold shadow-none focus-visible:ring-0" placeholder="Memory title"/><div className="flex h-10 shrink-0 items-center gap-1 border-b bg-muted/30 px-3">{tools.map(([Icon, label, active, run]) => <Button key={label} type="button" title={label} variant="ghost" size="icon" onClick={run} className={cn('size-8', active && 'bg-accent text-accent-foreground')}><Icon size={15}/></Button>)}</div><EditorContent editor={editor} className="quick-editor min-h-0 flex-1 overflow-hidden px-5 py-3"/><div className="grid shrink-0 grid-cols-2 gap-3 border-t bg-muted/20 p-3"><div><Label className="mb-1.5 block text-xs">Categories</Label><MultiSelect options={categoryOptions} value={categoryIds} onChange={setCategoryIds} placeholder="Optional categories" maxVisible={1} searchKey="quick-categories" onSearch={searchCategoryOptions}/></div><div><Label className="mb-1.5 block text-xs">Related memories</Label><MultiSelect options={relatedOptions} value={relatedIds} onChange={setRelatedIds} placeholder="Link memories" maxVisible={1} searchKey="quick-related" onSearch={searchRelatedOptions}/></div></div><footer className="flex h-8 shrink-0 items-center px-4 text-[10px] text-muted-foreground"><span>Ctrl/⌘ + Enter save</span><span className="ml-auto">Esc close</span></footer></section></main>;
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        resetDraft();
+        void categories.refetch();
+        void noteList.refetch();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () =>
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [categories, editor, noteList]);
+  const setLink = () => {
+    const href = window.prompt('Link URL');
+    if (href)
+      editor?.chain().focus().extendMarkRange('link').setLink({ href }).run();
+  };
+  const tools: (Tool | 'divider')[] = editor
+    ? [
+        { icon: Undo2, label: 'Undo', run: () => editor.chain().focus().undo().run() },
+        { icon: Redo2, label: 'Redo', run: () => editor.chain().focus().redo().run() },
+        'divider',
+        {
+          icon: Heading1,
+          label: 'Heading 1',
+          active: () => editor.isActive('heading', { level: 1 }),
+          run: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
+        },
+        {
+          icon: Heading2,
+          label: 'Heading 2',
+          active: () => editor.isActive('heading', { level: 2 }),
+          run: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+        },
+        {
+          icon: Bold,
+          label: 'Bold',
+          active: () => editor.isActive('bold'),
+          run: () => editor.chain().focus().toggleBold().run(),
+        },
+        {
+          icon: Italic,
+          label: 'Italic',
+          active: () => editor.isActive('italic'),
+          run: () => editor.chain().focus().toggleItalic().run(),
+        },
+        {
+          icon: UnderlineIcon,
+          label: 'Underline',
+          active: () => editor.isActive('underline'),
+          run: () => editor.chain().focus().toggleUnderline().run(),
+        },
+        {
+          icon: Strikethrough,
+          label: 'Strike',
+          active: () => editor.isActive('strike'),
+          run: () => editor.chain().focus().toggleStrike().run(),
+        },
+        {
+          icon: Highlighter,
+          label: 'Highlight',
+          active: () => editor.isActive('highlight'),
+          run: () => editor.chain().focus().toggleHighlight().run(),
+        },
+        {
+          icon: Link2,
+          label: 'Link',
+          active: () => editor.isActive('link'),
+          run: setLink,
+        },
+        'divider',
+        {
+          icon: List,
+          label: 'Bullet list',
+          active: () => editor.isActive('bulletList'),
+          run: () => editor.chain().focus().toggleBulletList().run(),
+        },
+        {
+          icon: ListOrdered,
+          label: 'Numbered list',
+          active: () => editor.isActive('orderedList'),
+          run: () => editor.chain().focus().toggleOrderedList().run(),
+        },
+        {
+          icon: Quote,
+          label: 'Quote',
+          active: () => editor.isActive('blockquote'),
+          run: () => editor.chain().focus().toggleBlockquote().run(),
+        },
+        {
+          icon: Code,
+          label: 'Code block',
+          active: () => editor.isActive('codeBlock'),
+          run: () => editor.chain().focus().toggleCodeBlock().run(),
+        },
+        {
+          icon: AlignLeft,
+          label: 'Align left',
+          active: () => editor.isActive({ textAlign: 'left' }),
+          run: () => editor.chain().focus().setTextAlign('left').run(),
+        },
+        {
+          icon: AlignCenter,
+          label: 'Align center',
+          active: () => editor.isActive({ textAlign: 'center' }),
+          run: () => editor.chain().focus().setTextAlign('center').run(),
+        },
+        {
+          icon: AlignRight,
+          label: 'Align right',
+          active: () => editor.isActive({ textAlign: 'right' }),
+          run: () => editor.chain().focus().setTextAlign('right').run(),
+        },
+        {
+          icon: Table2,
+          label: 'Insert table',
+          run: () =>
+            editor
+              .chain()
+              .focus()
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run(),
+        },
+      ]
+    : [];
+  return <main className="h-screen overflow-hidden bg-[#f7f8fc] p-3"><section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl"><header className="window-drag flex h-14 shrink-0 items-center border-b px-4"><div><h1 className="m-0 text-sm font-semibold">Quick create</h1><p className="m-0 text-[11px] text-muted-foreground">Keep it useful, not perfect.</p></div><Button size="sm" className="window-no-drag ml-auto" onClick={save} disabled={create.isPending || !title.trim()}><Check size={15}/> {create.isPending ? 'Saving…' : 'Save memory'}</Button><button onClick={close} className="window-no-drag ml-2 rounded-lg border-0 bg-transparent p-2 text-muted-foreground hover:bg-muted" aria-label="Close"><X size={17} /></button></header>{create.isError && <ErrorMessage message={getApiErrorMessage(create.error)} className="mx-4 mt-3 px-3 py-2 text-xs" />}<Input autoFocus value={title} onChange={(event) => setTitle(event.target.value)} className="h-12 shrink-0 rounded-none border-0 border-b px-5 text-lg font-semibold shadow-none focus-visible:ring-0" placeholder="Memory title" /><div className="flex h-10 shrink-0 flex-wrap items-center gap-1 border-b bg-muted/30 px-3">{tools.map((tool, index) => tool === 'divider' ? <span key={index} className="mx-1 h-6 w-px bg-border" /> : <Button key={tool.label} type="button" title={tool.label} variant="ghost" size="icon" onClick={tool.run} className={cn('size-8', tool.active?.() && 'bg-accent text-accent-foreground')}><tool.icon size={15} /></Button>)}</div><EditorContent editor={editor} className="quick-editor min-h-0 flex-1 overflow-hidden px-5 py-3" /><div className="grid shrink-0 grid-cols-2 gap-3 border-t bg-muted/20 p-3"><div className="flex flex-col gap-1.5"><div className="flex h-8 items-center justify-between"><Label className="block text-xs">Categories</Label><CategoryFormDialog trigger={<Button type="button" variant="ghost" size="sm" className="h-8 px-2.5 text-xs"><Plus size={13} /> New category</Button>} onSaved={(category) => { setCategoryIds((ids) => [...ids, category.id]); }} /></div><MultiSelect options={categoryOptions} value={categoryIds} onChange={setCategoryIds} placeholder="Choose one or more categories" maxVisible={1} searchKey="quick-categories" /></div><div className="flex flex-col gap-1.5"><div className="flex h-8 items-center"><Label className="block text-xs">Related memories</Label></div><MultiSelect options={relatedOptions} value={relatedIds} onChange={setRelatedIds} placeholder="Link existing memories" maxVisible={3} searchKey="quick-related" /></div></div><footer className="flex h-8 shrink-0 items-center px-4 text-[10px] text-muted-foreground"><span>Ctrl/⌘ + Enter save</span><span className="ml-auto">Esc close</span></footer></section></main>;
 }

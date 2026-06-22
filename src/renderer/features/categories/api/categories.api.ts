@@ -1,16 +1,14 @@
-import type { Category } from '../types/category.types';
+import { apiClient } from "../../../shared/lib/api-client";
+import type { Paginated } from "../../../shared/types/api.types";
+import type { Category, CategoryDetail, CategoryIcon, CategoryNoteFilters, CategoryNoteSummary, CreateCategoryInput, UpdateCategoryInput } from "../types/category.types";
 
-export const categories: Category[] = [
-  { id: 'electron', name: 'Electron', description: 'Desktop app architecture and implementation', color: '#6366f1', icon: 'Code2' },
-  { id: 'search', name: 'Search', description: 'Indexing, ranking and recall', color: '#0ea5e9', icon: 'Search' },
-  { id: 'product', name: 'Product', description: 'Ideas, scope and product decisions', color: '#a855f7', icon: 'Lightbulb' },
-  { id: 'recap', name: 'Recap', description: 'Daily reminders and review', color: '#f59e0b', icon: 'Bell' },
-  { id: 'editor', name: 'Editor', description: 'Writing and content structure', color: '#10b981', icon: 'FileText' },
-];
+const icons = new Set<CategoryIcon>(["Code2", "Search", "Lightbulb", "Bell", "FileText", "Folder"]);
+type ApiCategory = { id: string; name: string; description: string | null; color: string; icon: string | null; _count?: { notes: number } };
+const mapCategory = (item: ApiCategory): Category => ({ id: item.id, name: item.name, description: item.description ?? "", color: item.color, icon: icons.has(item.icon as CategoryIcon) ? item.icon as CategoryIcon : "Folder", noteCount: item._count?.notes ?? 0 });
 
-export async function getCategories() { return Promise.resolve(categories); }
-export async function searchCategories(query: string) {
-  await new Promise((resolve) => setTimeout(resolve, 120));
-  const keyword = query.trim().toLocaleLowerCase();
-  return keyword ? categories.filter((item) => `${item.name} ${item.description}`.toLocaleLowerCase().includes(keyword)) : categories;
-}
+export const getCategories = () => apiClient.get<ApiCategory[]>("/categories").then(({ data }) => data.map(mapCategory));
+export const getCategory = (id: string) => apiClient.get<ApiCategory>(`/categories/${id}`).then(({ data }) => mapCategory(data) satisfies CategoryDetail);
+export const getCategoryNotes = ({ id, filters }: { id: string; filters: CategoryNoteFilters }) => apiClient.get<Paginated<CategoryNoteSummary>>(`/categories/${id}/notes`, { params: filters }).then(({ data }) => data);
+export const createCategory = (input: CreateCategoryInput) => apiClient.post<ApiCategory>("/categories", input).then(({ data }) => mapCategory(data));
+export const updateCategory = ({ id, input }: { id: string; input: UpdateCategoryInput }) => apiClient.patch<ApiCategory>(`/categories/${id}`, input).then(({ data }) => mapCategory(data));
+export const deleteCategory = (id: string) => apiClient.delete<{ deleted: true }>(`/categories/${id}`).then(({ data }) => data);

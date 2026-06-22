@@ -5,9 +5,11 @@ import { HashRouter } from 'react-router-dom';
 import App from './app/App';
 import './index.css';
 
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 }, mutations: { retry: false } } });
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={queryClient}>
       <HashRouter><App /></HashRouter>
     </QueryClientProvider>
   </React.StrictMode>,

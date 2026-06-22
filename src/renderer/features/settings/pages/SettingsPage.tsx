@@ -44,7 +44,7 @@ export function SettingsPage() {
   const [compact, setCompact] = useState(false);
   const [recap, setRecap] = useState(true);
   return (
-    <div className="mx-auto max-w-4xl p-8">
+    <div className="mx-auto max-w-7xl p-8">
       <h2 className="mb-1 text-2xl">Settings</h2>
       <p className="mt-0 text-sm text-muted-foreground">
         Configure how Remember Anything behaves.

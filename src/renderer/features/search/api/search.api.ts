@@ -1,13 +1,44 @@
-import { notes } from '../../notes/api/notes.api';
+import { apiClient } from "../../../shared/lib/api-client";
+import type { Paginated } from "../../../shared/types/api.types";
+import type { Note } from "../../notes/types/note.types";
 
-export const searchHistory = ['electron sync', 'tìm kiếm tiếng Việt', 'daily recap'];
-export const suggestions = ['offline-first', 'Meilisearch', 'Tiptap', 'product ideas'];
+export const searchHistory = ["electron sync", "tìm kiếm tiếng Việt", "daily recap"];
+export const suggestions = ["offline-first", "Meilisearch", "Tiptap", "product ideas"];
 
-const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
+export type SearchNoteFilters = {
+  q: string;
+  page: number;
+  limit?: number;
+  categoryId?: string;
+  pinned?: boolean;
+  from?: string;
+  to?: string;
+  sort?: "relevance" | "recent";
+};
 
-export async function searchNotes(query: string) {
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  const keyword = normalize(query.trim());
-  if (!keyword) return notes;
-  return notes.filter((note) => normalize([note.title, note.category, note.content].join(' ')).includes(keyword));
-}
+type SearchHit = {
+  id: string;
+  title: string;
+  contentText: string;
+  categoryIds: string[];
+  categoryNames: string[];
+  pinned: boolean;
+  updatedAt: number;
+};
+
+export const searchNotes = (filters: SearchNoteFilters) =>
+  apiClient.get<Paginated<SearchHit>>("/search/notes", { params: filters }).then(({ data }) => ({
+    ...data,
+    totalPages: Math.ceil(data.total / data.limit),
+    items: data.items.map((note): Note => ({
+      id: note.id,
+      title: note.title,
+      category: note.categoryNames[0] ?? "Uncategorized",
+      categoryColor: "#64748b",
+      categoryIds: note.categoryIds,
+      content: note.contentText,
+      relatedIds: [],
+      updatedAt: new Date(note.updatedAt * 1000).toLocaleString(),
+      pinned: note.pinned,
+    })),
+  }));

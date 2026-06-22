@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createQuickWindows } from './quick-windows.js';
 import { createTray } from './tray.js';
+import { clearRefreshToken, getRefreshToken, setRefreshToken } from './token-vault.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow: BrowserWindow | null = null;
@@ -32,21 +33,22 @@ app.whenReady().then(() => {
   const quick = createQuickWindows(path.join(__dirname, '../preload/index.js'), !app.isPackaged);
   const showMain = () => { if (mainWindow?.isMinimized()) mainWindow.restore(); mainWindow?.show(); mainWindow?.focus(); mainWindow?.moveTop(); };
   tray = createTray({showMain, showSearch: quick.showSearch, showCreate: quick.showCreate, quit: () => app.quit()});
-  const searchShortcut = process.platform === 'darwin' ? 'Command+Space' : 'Control+Space';
+  const searchShortcut = 'CommandOrControl+Alt+Space';
+  const createShortcut = 'CommandOrControl+Alt+N';
   const searchRegistered = globalShortcut.register(searchShortcut, quick.showSearch);
-  const createRegistered = globalShortcut.register('CommandOrControl+Shift+N', quick.showCreate);
-  if (!searchRegistered) {
-    console.error('Quick Search shortcut unavailable: Ctrl/Cmd+Space is reserved by another app or input method. Using Ctrl/Cmd+Alt+Space.');
-    globalShortcut.register('CommandOrControl+Alt+Space', quick.showSearch);
-  }
-  if (!createRegistered) console.error('Quick Create shortcut unavailable: Ctrl/Cmd+Shift+N is already registered.');
-  ipcMain.on('quick:close', (event) => BrowserWindow.fromWebContents(event.sender)?.hide());
+  const createRegistered = globalShortcut.register(createShortcut, quick.showCreate);
+  if (!searchRegistered) console.error('Quick Search shortcut unavailable: Ctrl/Cmd+Alt+Space is already registered.');
+  if (!createRegistered) console.error('Quick Create shortcut unavailable: Ctrl/Cmd+Alt+N is already registered.');
+  ipcMain.on('quick:close', (event) => BrowserWindow.fromWebContents(event.sender)?.close());
   ipcMain.on('quick:open-note', (event, id: string) => {
-    BrowserWindow.fromWebContents(event.sender)?.hide();
+    BrowserWindow.fromWebContents(event.sender)?.close();
     showMain();
     mainWindow?.webContents.send('app:navigate', `/notes/${id}`);
   });
-  ipcMain.on('quick:save-note', (event) => BrowserWindow.fromWebContents(event.sender)?.hide());
+  ipcMain.on('quick:save-note', (event) => BrowserWindow.fromWebContents(event.sender)?.close());
+  ipcMain.handle('auth:refresh-token:get', () => getRefreshToken());
+  ipcMain.handle('auth:refresh-token:set', (_event, token: string) => setRefreshToken(token));
+  ipcMain.handle('auth:refresh-token:clear', () => clearRefreshToken());
   app.on('activate', () => { if (!mainWindow || mainWindow.isDestroyed()) mainWindow = createMainWindow(); else mainWindow.show(); });
 });
 

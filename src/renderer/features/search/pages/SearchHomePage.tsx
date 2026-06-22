@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Clock3, FileText, Pin, Search, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Pagination } from "../../../shared/components/Pagination";
 import { Badge } from "../../../shared/components/ui/badge";
 import { Button } from "../../../shared/components/ui/button";
+import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import {
   Select,
   SelectContent,
@@ -11,9 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../shared/components/ui/select";
-import { categories } from "../../categories/api/categories.api";
+import { getApiErrorMessage } from "../../../shared/lib/api-client";
+import { useGetCategories } from "../../categories/hooks/useCategories";
+import type { Category } from "../../categories/types/category.types";
 import type { Note } from "../../notes/types/note.types";
-import { searchHistory, searchNotes } from "../api/search.api";
+import { searchHistory } from "../api/search.api";
+import { useSearchNotes } from "../hooks/useSearch";
 
 type Filter = "all" | "today" | "pinned";
 
@@ -33,7 +37,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-function SearchPreview({ note, query }: { note?: Note; query: string }) {
+function SearchPreview({ note, query, categories }: { note?: Note; query: string; categories: Category[] }) {
   if (!note)
     return (
       <div className="grid h-full place-items-center text-sm text-muted-foreground">
@@ -97,24 +101,26 @@ export function SearchHomePage() {
   const [focused, setFocused] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState("relevance");
+  const [categoryId, setCategoryId] = useState("all");
+  const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string>();
   const navigate = useNavigate();
-  const { data = [], isFetching } = useQuery({
-    queryKey: ["search", query],
-    queryFn: () => searchNotes(query),
+  const deferredQuery = useDeferredValue(query);
+  const categories = useGetCategories();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const search = useSearchNotes({
+    q: deferredQuery,
+    page,
+    limit: 20,
+    categoryId: categoryId === "all" ? undefined : categoryId,
+    pinned: filter === "pinned" ? true : undefined,
+    from: filter === "today" ? today.toISOString() : undefined,
+    sort: sort as "relevance" | "recent",
   });
-  const results = useMemo(() => {
-    const filtered =
-      filter === "pinned"
-        ? data.filter((note) => note.pinned)
-        : filter === "today"
-          ? data.slice(0, 3)
-          : data;
-    return sort === "recent"
-      ? [...filtered].sort((a, b) => a.id.localeCompare(b.id))
-      : filtered;
-  }, [data, filter, sort]);
+  const results = search.data?.items ?? [];
   const selected = results.find((note) => note.id === selectedId) ?? results[0];
+  useEffect(() => setPage(1), [deferredQuery, filter, sort, categoryId]);
   useEffect(() => {
     if (selected && selected.id !== selectedId) setSelectedId(selected.id);
   }, [selected, selectedId]);
@@ -153,7 +159,7 @@ export function SearchHomePage() {
               className="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-sm outline-none"
               placeholder="Search memories..."
             />
-            {isFetching && (
+            {search.isFetching && (
               <span className="mr-3 text-xs text-muted-foreground">
                 Searching…
               </span>
@@ -201,10 +207,19 @@ export function SearchHomePage() {
             </Button>
           ))}
           <span className="ml-2 text-xs text-muted-foreground">
-            {results.length} results
+            {search.data?.total ?? 0} results
           </span>
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger className="ml-auto h-8 w-40 text-xs">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {(categories.data ?? []).map((category) => <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger className="ml-auto h-8 w-36 border-0 bg-transparent text-xs">
+            <SelectTrigger className="h-8 w-36 border-0 bg-transparent text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -219,6 +234,7 @@ export function SearchHomePage() {
           <div className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Search results
           </div>
+          {search.isError && <ErrorMessage message={getApiErrorMessage(search.error)} className="m-3" />}
           {results.map((note) => (
             <button
               key={note.id}
@@ -249,13 +265,14 @@ export function SearchHomePage() {
               </span>
             </button>
           ))}
-          {!isFetching && !results.length && (
+          {!search.isFetching && !search.isError && !results.length && (
             <div className="p-10 text-center text-sm text-muted-foreground">
               No memory found.
             </div>
           )}
+          {search.data && <Pagination page={search.data.page} totalPages={search.data.totalPages} total={search.data.total} onChange={setPage} />}
         </section>
-        <SearchPreview note={selected} query={query} />
+        <SearchPreview note={selected} query={query} categories={categories.data ?? []} />
       </div>
     </div>
   );

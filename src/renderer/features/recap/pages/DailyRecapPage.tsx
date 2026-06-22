@@ -3,7 +3,7 @@ import { notes } from "../../notes/api/notes.api";
 
 export function DailyRecapPage() {
   return (
-    <div className="mx-auto max-w-4xl p-8">
+    <div className="mx-auto max-w-7xl p-8">
       <h2 className="mb-1 text-2xl">Daily recap</h2>
       <p className="mt-0 text-sm text-slate-400">
         A quiet review of what you captured today.

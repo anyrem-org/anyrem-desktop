@@ -33,8 +33,8 @@ function createQuickWindow(route: QuickRoute, preload: string, isDev: boolean) {
 }
 
 export function createQuickWindows(preload: string, isDev: boolean) {
-  const search = createQuickWindow('quick-search', preload, isDev);
-  const create = createQuickWindow('quick-create', preload, isDev);
+  let search = createQuickWindow('quick-search', preload, isDev);
+  let create = createQuickWindow('quick-create', preload, isDev);
   const show = (window: BrowserWindow) => {
     if (window.isMinimized()) window.restore();
     position(window);
@@ -43,5 +43,16 @@ export function createQuickWindows(preload: string, isDev: boolean) {
     window.moveTop();
     window.focus();
   };
-  return {search, create, showSearch: () => show(search), showCreate: () => show(create)};
+  const getSearch = () => {
+    if (search.isDestroyed()) search = createQuickWindow('quick-search', preload, isDev);
+    return search;
+  };
+  const getCreate = () => {
+    if (create.isDestroyed()) create = createQuickWindow('quick-create', preload, isDev);
+    return create;
+  };
+  return {
+    showSearch: () => show(getSearch()),
+    showCreate: () => show(getCreate()),
+  };
 }

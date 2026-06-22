@@ -14,9 +14,14 @@ import { SearchHomePage } from '../features/search/pages/SearchHomePage';
 import { SettingsPage } from '../features/settings/pages/SettingsPage';
 import { QuickCreatePage } from '../features/quick-access/pages/QuickCreatePage';
 import { QuickSearchPage } from '../features/quick-access/pages/QuickSearchPage';
+import { useSessionBootstrap } from '../features/auth/hooks/useAuth';
+import { useAuthStore } from '../features/auth/store/auth.store';
 
 export default function App() {
   const navigate = useNavigate();
+  useSessionBootstrap();
+  const authStatus = useAuthStore((state) => state.status);
   useEffect(() => window.desktop?.onNavigate(navigate), [navigate]);
-  return <Routes><Route path="/quick-search" element={<QuickSearchPage/>}/><Route path="/quick-create" element={<QuickCreatePage/>}/><Route path="/login" element={<LoginPage/>}/><Route element={<AuthGuard><AppShell/></AuthGuard>}><Route path="/" element={<DashboardPage/>}/><Route path="/search" element={<SearchHomePage/>}/><Route path="/notes/new" element={<NoteEditorPage/>}/><Route path="/notes/:id" element={<NoteDetailPage/>}/><Route path="/categories" element={<CategoriesPage/>}/><Route path="/categories/:id" element={<CategoryDetailPage/>}/><Route path="/graph" element={<GraphPage/>}/><Route path="/recap" element={<DailyRecapPage/>}/><Route path="/settings" element={<SettingsPage/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Route></Routes>;
+  if (authStatus === 'initializing') return <main className="grid min-h-screen place-items-center bg-[#f7f8fc] text-sm text-muted-foreground">Restoring session…</main>;
+  return <Routes><Route path="/quick-search" element={<QuickSearchPage/>}/><Route path="/quick-create" element={<QuickCreatePage/>}/><Route path="/login" element={<LoginPage/>}/><Route element={<AuthGuard><AppShell/></AuthGuard>}><Route path="/" element={<DashboardPage/>}/><Route path="/search" element={<SearchHomePage/>}/><Route path="/notes/new" element={<NoteEditorPage/>}/><Route path="/notes/:id/edit" element={<NoteEditorPage/>}/><Route path="/notes/:id" element={<NoteDetailPage/>}/><Route path="/categories" element={<CategoriesPage/>}/><Route path="/categories/:id" element={<CategoryDetailPage/>}/><Route path="/graph" element={<GraphPage/>}/><Route path="/recap" element={<DailyRecapPage/>}/><Route path="/settings" element={<SettingsPage/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Route></Routes>;
 }

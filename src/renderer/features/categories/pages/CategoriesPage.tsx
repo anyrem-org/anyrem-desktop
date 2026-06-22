@@ -1,58 +1,33 @@
-import { Plus } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { getApiErrorMessage } from "../../../shared/lib/api-client";
+import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { Badge } from "../../../shared/components/ui/badge";
 import { Button } from "../../../shared/components/ui/button";
 import { Card, CardContent } from "../../../shared/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../../../shared/components/ui/dialog";
-import { Input } from "../../../shared/components/ui/input";
-import { Label } from "../../../shared/components/ui/label";
-import { cn } from "../../../shared/lib/utils";
-import { notes } from "../../notes/api/notes.api";
-import { categories as initialCategories } from "../api/categories.api";
-import { CategoryIcon, categoryIconNames } from "../components/CategoryIcon";
-import type { CategoryIcon as IconName } from "../types/category.types";
-
-const colors = [
-  "#6366f1",
-  "#0ea5e9",
-  "#a855f7",
-  "#f59e0b",
-  "#10b981",
-  "#ef4444",
-];
+import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
+import { CategoryFormDialog } from "../components/CategoryFormDialog";
+import { CategoryIcon } from "../components/CategoryIcon";
+import { useDeleteCategory, useGetCategories } from "../hooks/useCategories";
 
 export function CategoriesPage() {
-  const [items, setItems] = useState(initialCategories);
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [color, setColor] = useState(colors[0]);
-  const [icon, setIcon] = useState<IconName>();
-  // ponytail: mutate mock module only; backend API replaces this in next phase.
-  const create = (event: FormEvent) => {
-    event.preventDefault();
-    if (!name.trim()) return;
-    const category = {
-      id: name.toLowerCase().replace(/\s+/g, "-"),
-      name: name.trim(),
-      description,
-      color,
-      icon,
-    };
-    initialCategories.push(category);
-    setItems([...initialCategories]);
-    setName("");
-    setDescription("");
-    setOpen(false);
-  };
+  const categories = useGetCategories();
+  const remove = useDeleteCategory();
+  if (categories.isPending)
+    return (
+      <div className="p-8 text-sm text-muted-foreground">
+        Loading categories…
+      </div>
+    );
+  if (categories.isError)
+    return (
+      <div className="p-8">
+        <ErrorMessage message={getApiErrorMessage(categories.error)} className="mb-4" />
+        <Button variant="outline" onClick={() => categories.refetch()}>
+          Retry
+        </Button>
+      </div>
+    );
   return (
     <div className="p-8">
       <div className="flex items-end justify-between">
@@ -62,120 +37,84 @@ export function CategoriesPage() {
             Browse memories by context.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
+        <CategoryFormDialog
+          trigger={
             <Button>
               <Plus size={16} /> New category
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create category</DialogTitle>
-              <DialogDescription>
-                Group related memories under one context.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={create} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="category-name">Name</Label>
-                <Input
-                  id="category-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Architecture"
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category-description">Description</Label>
-                <Input
-                  id="category-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What belongs here?"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Optional icon</Label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={!icon ? "default" : "outline"}
-                    onClick={() => setIcon(undefined)}
-                  >
-                    None
-                  </Button>
-                  {categoryIconNames.map((item) => (
-                    <Button
-                      type="button"
-                      key={item}
-                      variant={icon === item ? "default" : "outline"}
-                      size="icon"
-                      onClick={() => setIcon(item)}
-                    >
-                      <CategoryIcon name={item} size={17} />
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Color</Label>
-                <div className="flex gap-2">
-                  {colors.map((item) => (
-                    <button
-                      type="button"
-                      key={item}
-                      onClick={() => setColor(item)}
-                      className={cn(
-                        "size-8 rounded-full border-4 border-white shadow-sm ring-offset-2",
-                        color === item && "ring-2 ring-primary",
-                      )}
-                      style={{ background: item }}
-                      aria-label={item}
-                    />
-                  ))}
-                </div>
-              </div>
-              <Button className="w-full">Create category</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+          }
+        />
       </div>
-      <div className="mt-7 grid grid-cols-3 gap-4">
-        {items.map((item) => {
-          const count = notes.filter((note) =>
-            note.categoryIds.includes(item.id),
-          ).length;
-          return (
-            <Link
-              key={item.id}
-              to={`/categories/${item.id}`}
-              className="no-underline"
+      {remove.isError && <ErrorMessage message={getApiErrorMessage(remove.error)} className="mt-5" />}
+      {!categories.data.length ? (
+        <div className="mt-7 rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
+          No categories yet.
+        </div>
+      ) : (
+        <div className="mt-7 grid grid-cols-3 gap-4">
+          {categories.data.map((category) => (
+            <Card
+              key={category.id}
+              className="h-full transition hover:border-primary/30 hover:shadow-md"
             >
-              <Card className="h-full transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <span
-                      className="grid size-11 place-items-center rounded-xl"
-                      style={{
-                        background: `${item.color}14`,
-                        color: item.color,
-                      }}
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <span
+                    className="grid size-11 place-items-center rounded-xl"
+                    style={{
+                      background: `${category.color}14`,
+                      color: category.color,
+                    }}
+                  >
+                    <CategoryIcon name={category.icon} />
+                  </span>
+                  <Badge>{category.noteCount} notes</Badge>
+                </div>
+                <h3 className="mb-1 mt-5 text-foreground">{category.name}</h3>
+                <p className="min-h-10 text-xs leading-5 text-muted-foreground">
+                  {category.description}
+                </p>
+                <div className="mt-4 flex gap-2">
+                  <Button size="sm" variant="outline" asChild>
+                    <Link
+                      to={`/categories/${category.id}`}
+                      className="no-underline"
                     >
-                      <CategoryIcon name={item.icon} />
-                    </span>
-                    <Badge>{count} notes</Badge>
-                  </div>
-                  <h3 className="mb-1 mt-5 text-foreground">{item.name}</h3>
-                  <p className="m-0 text-xs leading-5 text-muted-foreground">
-                    {item.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
+                      <ExternalLink size={14} /> Open
+                    </Link>
+                  </Button>
+                  <CategoryFormDialog
+                    category={category}
+                    trigger={
+                      <Button size="sm" variant="ghost">
+                        <Pencil size={14} /> Edit
+                      </Button>
+                    }
+                  />
+                  <ConfirmDialog
+                    title={`Delete “${category.name}”?`}
+                    description="This category can only be deleted when no memories use it. Memories are never deleted."
+                    confirmLabel="Delete category"
+                    pending={remove.isPending}
+                    onConfirm={() => remove.mutate(category.id)}
+                    trigger={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto text-destructive"
+                        disabled={remove.isPending}
+                        aria-label={`Delete ${category.name}`}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

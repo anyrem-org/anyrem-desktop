@@ -1,60 +1,72 @@
-import { ArrowLeft, Edit3, Pin } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
-import { notes } from "../api/notes.api";
-import { NoteCard } from "../components/NoteCard";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
+import { getApiErrorMessage } from "../../../shared/lib/api-client";
+import { ErrorMessage } from "../../../shared/components/ErrorMessage";
+import { useGetNote, useGetNotes } from "../hooks/useNotes";
+import { useUiStore } from "../../../shared/store/ui.store";
+import { NoteContent } from "../components/NoteContent";
+import { NoteHeader } from "../components/NoteHeader";
+import { RightInsightPanel } from "../components/RightInsightPanel";
 
 export function NoteDetailPage() {
   const { id } = useParams();
-  const note = notes.find((x) => x.id === id) ?? notes[0];
+  const query = useGetNote(id);
+  const noteList = useGetNotes({ page: 1, limit: 100 });
+  const panelOpen = useUiStore((state) => state.activityOpen);
+  const setPanelOpen = useUiStore((state) => state.setActivityOpen);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [matchCount, setMatchCount] = useState(0);
+  const [activeMatchIndex, setActiveMatchIndex] = useState(0);
+  const autoCollapsedRef = useRef(false);
+
+  const cycleMatch = (step: number) => {
+    if (!matchCount) return;
+    setActiveMatchIndex((current) => (current + step + matchCount) % matchCount);
+  };
+
+  useEffect(() => {
+    const smallViewport = window.innerWidth < 1440;
+    if (smallViewport && !autoCollapsedRef.current) {
+      setPanelOpen(false);
+      autoCollapsedRef.current = true;
+    }
+  }, [setPanelOpen]);
+
+  if (query.isPending) return <div className="p-8 text-sm text-muted-foreground">Loading memory…</div>;
+  if (query.isError) return <div className="p-8"><ErrorMessage message={getApiErrorMessage(query.error)} /></div>;
+  const note = query.data;
+  const related = (noteList.data?.items ?? []).filter((item) => note.relatedIds.includes(item.id));
+
   return (
-    <div className="mx-auto max-w-5xl p-8">
-      <Link
-        to="/"
-        className="mb-7 inline-flex items-center gap-2 text-sm text-slate-500 no-underline"
-      >
-        <ArrowLeft size={16} /> Back to search
-      </Link>
-      <article className="rounded-3xl border bg-white p-10 shadow-sm">
-        <div className="flex items-start">
-          <div>
-            <span
-              className="rounded-full px-3 py-1 text-xs font-semibold"
-              style={{
-                background: `${note.categoryColor}14`,
-                color: note.categoryColor,
-              }}
-            >
-              {note.category}
-              {note.categoryIds.length > 1 &&
-                ` +${note.categoryIds.length - 1}`}
-            </span>
-            <h2 className="mb-3 mt-5 max-w-3xl text-4xl leading-tight">
-              {note.title}
-            </h2>
-            <p className="text-sm text-slate-400">Updated {note.updatedAt}</p>
-          </div>
-          <div className="ml-auto flex gap-2">
-            <button className="rounded-xl border p-2.5">
-              <Pin size={17} />
-            </button>
-            <button className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground">
-              <Edit3 size={16} /> Edit
-            </button>
-          </div>
-        </div>
-        <div className="my-8 h-px bg-slate-100" />
-        <p className="max-w-3xl text-base leading-8 text-slate-600">
-          {note.content}
-        </p>
-      </article>
-      <h3 className="mb-4 mt-8">Related memories</h3>
-      <div className="grid grid-cols-2 gap-4">
-        {notes
-          .filter((x) => note.relatedIds.includes(x.id))
-          .map((x) => (
-            <NoteCard key={x.id} note={x} />
-          ))}
-      </div>
+    <div className="flex h-full min-h-0 bg-[#f7f8fc]">
+      <section className="flex min-w-0 flex-1 flex-col">
+        <NoteHeader
+          note={note}
+          searchQuery={searchQuery}
+          matchCount={matchCount}
+          activeIndex={activeMatchIndex}
+          onSearchChange={(value) => {
+            setSearchQuery(value);
+            setActiveMatchIndex(0);
+          }}
+          onPreviousMatch={() => cycleMatch(-1)}
+          onNextMatch={() => cycleMatch(1)}
+        />
+        <NoteContent
+          html={note.contentHtml}
+          searchQuery={searchQuery}
+          activeIndex={activeMatchIndex}
+          onMatchCountChange={setMatchCount}
+          onActiveIndexChange={setActiveMatchIndex}
+          onWideTableChange={(hasWide) => {
+            if (hasWide && !autoCollapsedRef.current) {
+              setPanelOpen(false);
+              autoCollapsedRef.current = true;
+            }
+          }}
+        />
+      </section>
+      <RightInsightPanel notes={related} open={panelOpen} />
     </div>
   );
 }

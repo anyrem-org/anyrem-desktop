@@ -1,10 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, CornerDownLeft, Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../../../shared/components/ui/badge";
 import type { Note } from "../../notes/types/note.types";
-import { searchNotes } from "../../search/api/search.api";
+import { useSearchNotes } from "../../search/hooks/useSearch";
 import { QuickNoteDetail } from "../components/QuickNoteDetail";
 
 export function QuickSearchPage() {
@@ -12,16 +11,19 @@ export function QuickSearchPage() {
   const [selected, setSelected] = useState(0);
   const [detail, setDetail] = useState<Note>();
   const navigate = useNavigate();
-  const { data = [], isFetching } = useQuery({
-    queryKey: ["quick-search", query],
-    queryFn: () => searchNotes(query),
-  });
+  const closeQuick = () => {
+    window.desktop?.closeQuickWindow();
+    window.close();
+  };
+  const deferredQuery = useDeferredValue(query);
+  const search = useSearchNotes({ q: deferredQuery, page: 1, limit: 20, sort: "relevance" });
+  const data = search.data?.items ?? [];
   useEffect(() => setSelected(0), [query]);
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         if (detail) setDetail(undefined);
-        else window.desktop?.closeQuickWindow();
+        else closeQuick();
       }
       if (detail) return;
       if (event.key === "ArrowDown") {
@@ -45,7 +47,7 @@ export function QuickSearchPage() {
       <QuickNoteDetail
         note={detail}
         onBack={() => setDetail(undefined)}
-        onClose={() => window.desktop?.closeQuickWindow()}
+        onClose={closeQuick}
         onOpenFull={() =>
           window.desktop
             ? window.desktop.openQuickResult(detail.id)
@@ -66,10 +68,10 @@ export function QuickSearchPage() {
             placeholder="Search your memory..."
           />
           <span className="text-xs text-muted-foreground">
-            {isFetching ? "Searching…" : `${data.length} results`}
+            {search.isFetching ? "Searching…" : `${search.data?.total ?? 0} results`}
           </span>
           <button
-            onClick={() => window.desktop?.closeQuickWindow()}
+            onClick={closeQuick}
             className="window-no-drag ml-3 rounded-lg border-0 bg-transparent p-2 text-muted-foreground hover:bg-muted"
             aria-label="Close"
           >
@@ -102,7 +104,7 @@ export function QuickSearchPage() {
               )}
             </button>
           ))}
-          {!isFetching && !data.length && (
+          {!search.isFetching && !data.length && (
             <div className="grid h-full place-items-center text-sm text-muted-foreground">
               No memory found.
             </div>
