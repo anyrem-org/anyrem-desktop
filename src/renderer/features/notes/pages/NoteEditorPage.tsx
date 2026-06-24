@@ -30,6 +30,8 @@ import {
   Table2,
   Underline as UnderlineIcon,
   Undo2,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -41,6 +43,7 @@ import { Input } from "../../../shared/components/ui/input";
 import { Label } from "../../../shared/components/ui/label";
 import { getApiErrorMessage } from "../../../shared/lib/api-client";
 import { cn } from "../../../shared/lib/utils";
+import { useUiStore } from "../../../shared/store/ui.store";
 import { CategoryFormDialog } from "../../categories/components/CategoryFormDialog";
 import { useGetCategories } from "../../categories/hooks/useCategories";
 import { useCreateNote, useGetNote, useGetNotes, useUpdateNote } from "../hooks/useNotes";
@@ -58,12 +61,16 @@ export function NoteEditorPage() {
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const { data: categoryItems = [] } = useGetCategories();
   const [relatedIds, setRelatedIds] = useState<string[]>([]);
+  const [fullContent, setFullContent] = useState(false);
+  const activityOpen = useUiStore((state) => state.activityOpen);
+  const setActivityOpen = useUiStore((state) => state.setActivityOpen);
   const existing = useGetNote(id);
   // ponytail: local selector covers first 100 notes; switch to async search when needed.
   const noteList = useGetNotes({ page: 1, limit: 100 });
   const create = useCreateNote();
   const update = useUpdateNote();
   const initialized = useRef(false);
+  const activityBeforeFullContent = useRef(activityOpen);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -90,6 +97,16 @@ export function NoteEditorPage() {
     editor.commands.setContent(existing.data.contentJson);
   }, [editor, existing.data]);
   const mutation = id ? update : create;
+  const toggleFullContent = () => {
+    if (fullContent) {
+      setFullContent(false);
+      setActivityOpen(activityBeforeFullContent.current);
+      return;
+    }
+    activityBeforeFullContent.current = activityOpen;
+    setActivityOpen(false);
+    setFullContent(true);
+  };
   const save = () => {
     if (!editor || !title.trim()) return;
     const input = { title: title.trim(), contentJson: editor.getJSON(), categoryIds, relatedIds };
@@ -219,7 +236,7 @@ export function NoteEditorPage() {
       ]
     : [];
   return (
-    <div className="mx-auto flex h-full min-h-0 max-w-7xl flex-col p-8">
+    <div className={fullContent ? "flex h-full min-h-0 flex-col p-8" : "mx-auto flex h-full min-h-0 max-w-7xl flex-col p-8"}>
       <div className="mb-6 shrink-0 flex items-center justify-between">
         <div>
           <h2 className="mb-1 text-2xl">{id ? "Edit memory" : "Create a new memory"}</h2>
@@ -227,9 +244,15 @@ export function NoteEditorPage() {
             Keep it useful, not perfect.
           </p>
         </div>
-        <Button onClick={save} disabled={mutation.isPending || !title.trim()}>
-          <Save size={16} /> {mutation.isPending ? "Saving…" : "Save memory"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={toggleFullContent}>
+            {fullContent ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            {fullContent ? "Normal view" : "Full content"}
+          </Button>
+          <Button onClick={save} disabled={mutation.isPending || !title.trim()}>
+            <Save size={16} /> {mutation.isPending ? "Saving…" : "Save memory"}
+          </Button>
+        </div>
       </div>
       {mutation.isError ? (
         <ErrorMessage message={getApiErrorMessage(mutation.error)} className="mb-4 shrink-0" />
@@ -271,46 +294,56 @@ export function NoteEditorPage() {
         </div>
         <EditorContent editor={editor} className="note-editor min-h-0 flex-1 overflow-hidden px-7 py-4" />
       </Card>
-      <div className="mt-4 shrink-0 grid grid-cols-2 gap-4">
+      {!fullContent && <div className="mt-4 shrink-0 grid grid-cols-2 gap-4">
         <Card className="p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <Label>Categories</Label>
-            <CategoryFormDialog
-              trigger={<Button type="button" variant="ghost" size="sm"><Plus size={14} /> New category</Button>}
-              onSaved={(category) => {
-                setCategoryIds((ids) => [...ids, category.id]);
-              }}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex h-8 items-center justify-between">
+              <Label className="block text-xs">Categories</Label>
+              <CategoryFormDialog
+                trigger={
+                  <Button type="button" variant="ghost" size="sm" className="h-8 px-2.5 text-xs">
+                    <Plus size={13} /> New category
+                  </Button>
+                }
+                onSaved={(category) => {
+                  setCategoryIds((ids) => [...ids, category.id]);
+                }}
+              />
+            </div>
+            <MultiSelect
+              options={categoryItems.map((item) => ({
+                value: item.id,
+                label: item.name,
+                color: item.color,
+                description: item.description,
+              }))}
+              value={categoryIds}
+              onChange={setCategoryIds}
+              placeholder="Choose one or more categories"
+              searchKey="categories"
             />
           </div>
-          <MultiSelect
-            options={categoryItems.map((item) => ({
-              value: item.id,
-              label: item.name,
-              color: item.color,
-              description: item.description,
-            }))}
-            value={categoryIds}
-            onChange={setCategoryIds}
-            placeholder="Choose one or more categories"
-            searchKey="categories"
-          />
         </Card>
         <Card className="p-4">
-          <Label className="mb-2 block">Related memories</Label>
-          <MultiSelect
-            options={(noteList.data?.items ?? []).filter((item) => item.id !== id).map((item) => ({
-              value: item.id,
-              label: item.title,
-              description: item.category,
-            }))}
-            value={relatedIds}
-            onChange={setRelatedIds}
-            placeholder="Link existing memories"
-            maxVisible={3}
-            searchKey="related-memories"
-          />
+          <div className="flex flex-col gap-1.5">
+            <div className="flex h-8 items-center">
+              <Label className="block text-xs">Related memories</Label>
+            </div>
+            <MultiSelect
+              options={(noteList.data?.items ?? []).filter((item) => item.id !== id).map((item) => ({
+                value: item.id,
+                label: item.title,
+                description: item.category,
+              }))}
+              value={relatedIds}
+              onChange={setRelatedIds}
+              placeholder="Link existing memories"
+              maxVisible={3}
+              searchKey="related-memories"
+            />
+          </div>
         </Card>
-      </div>
+      </div>}
     </div>
   );
 }

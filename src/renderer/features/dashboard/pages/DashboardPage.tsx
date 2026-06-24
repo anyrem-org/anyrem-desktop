@@ -7,6 +7,7 @@ import {
   NotebookPen,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { Badge } from "../../../shared/components/ui/badge";
 import { Button } from "../../../shared/components/ui/button";
 import {
@@ -14,32 +15,29 @@ import {
   CardContent,
   CardHeader,
 } from "../../../shared/components/ui/card";
+import { getApiErrorMessage } from "../../../shared/lib/api-client";
 import { useUiStore } from "../../../shared/store/ui.store";
-import { mockCategories as categories } from "../../categories/api/categories.mock";
 import { CategoryIcon } from "../../categories/components/CategoryIcon";
-import { notes } from "../../notes/api/notes.api";
 import { ContinueCard } from "../components/ContinueCard";
 import { DashboardSearch } from "../components/DashboardSearch";
-
-const today = notes.slice(0, 3);
-const recent = notes.slice(1, 5);
-const topCategories = categories
-  .map((category) => ({
-    ...category,
-    count: notes.filter((note) => note.categoryIds.includes(category.id))
-      .length,
-  }))
-  .sort((a, b) => b.count - a.count)
-  .slice(0, 4);
+import { useDashboard } from "../hooks/useDashboard";
 
 export function DashboardPage() {
   const openNote = (id: string) => useUiStore.getState().selectNote(id);
+  const dashboard = useDashboard();
+  const data = dashboard.data;
+  const today = data?.today ?? [];
+  const recent = data?.recentlyActive ?? [];
+  const topCategories = data?.topCategories ?? [];
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-8">
       <DashboardSearch />
+      {dashboard.isError && (
+        <ErrorMessage message={getApiErrorMessage(dashboard.error)} />
+      )}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_.9fr]">
         <div className="space-y-6">
-          <ContinueCard note={notes[0]} />
+          {data?.continue ? <ContinueCard note={data.continue} /> : null}
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
               <div>
@@ -58,6 +56,7 @@ export function DashboardPage() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-2">
+              {dashboard.isPending && <p className="text-sm text-muted-foreground">Loading memories…</p>}
               {today.map((note) => (
                 <button
                   key={note.id}
@@ -82,6 +81,9 @@ export function DashboardPage() {
                   />
                 </button>
               ))}
+              {!dashboard.isPending && !today.length && (
+                <p className="text-sm text-muted-foreground">No memories captured today.</p>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -109,10 +111,13 @@ export function DashboardPage() {
                     {note.title}
                   </strong>
                   <span className="mt-2 block text-xs text-muted-foreground">
-                    {note.updatedAt}
+                    {note.occurredAt}
                   </span>
                 </button>
               ))}
+              {!dashboard.isPending && !recent.length && (
+                <p className="col-span-2 text-sm text-muted-foreground">No recent activity yet.</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -132,6 +137,7 @@ export function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {dashboard.isPending && <p className="text-sm text-muted-foreground">Loading topics…</p>}
               {topCategories.map((category) => (
                 <Link
                   key={category.id}
@@ -166,6 +172,9 @@ export function DashboardPage() {
                   </span>
                 </Link>
               ))}
+              {!dashboard.isPending && !topCategories.length && (
+                <p className="text-sm text-muted-foreground">No focus topics yet.</p>
+              )}
             </CardContent>
           </Card>
           <Card className="overflow-hidden border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50">
@@ -180,7 +189,7 @@ export function DashboardPage() {
               </div>
               <h3 className="mb-2 mt-5 text-base">Daily recap preview</h3>
               <p className="text-sm leading-6 text-muted-foreground">
-                Today you captured {today.length} memories across{" "}
+                Today you captured {data?.recapPreview.noteCount ?? today.length} memories across{" "}
                 {new Set(today.flatMap((note) => note.categoryIds)).size}{" "}
                 topics. Review them before the day fades.
               </p>

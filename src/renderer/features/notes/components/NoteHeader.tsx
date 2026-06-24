@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit3, Pin } from "lucide-react";
+import { ArrowLeft, Edit3, Maximize2, Minimize2, Pin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../shared/components/ui/button";
 import type { NoteRecord } from "../types/note.types";
@@ -12,6 +12,8 @@ type Props = {
   onSearchChange: (value: string) => void;
   onPreviousMatch: () => void;
   onNextMatch: () => void;
+  fullContent: boolean;
+  onToggleFullContent: () => void;
 };
 
 export function NoteHeader({
@@ -22,6 +24,8 @@ export function NoteHeader({
   onSearchChange,
   onPreviousMatch,
   onNextMatch,
+  fullContent,
+  onToggleFullContent,
 }: Props) {
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200 bg-[#f7f8fc]/95 backdrop-blur">
@@ -55,6 +59,15 @@ export function NoteHeader({
               </div>
             </div>
             <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl px-4"
+                onClick={onToggleFullContent}
+              >
+                {fullContent ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                {fullContent ? "Normal view" : "Full content"}
+              </Button>
               <Button type="button" variant="outline" size="icon" className="rounded-xl">
                 <Pin size={17} />
               </Button>

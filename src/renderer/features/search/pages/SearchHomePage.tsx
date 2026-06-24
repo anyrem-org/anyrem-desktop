@@ -14,6 +14,8 @@ import {
 } from "../../../shared/components/ui/select";
 import { getApiErrorMessage } from "../../../shared/lib/api-client";
 import { useGetCategories } from "../../categories/hooks/useCategories";
+import { NoteContent } from "../../notes/components/NoteContent";
+import { useGetNote } from "../../notes/hooks/useNotes";
 import type { Category } from "../../categories/types/category.types";
 import type { Note } from "../../notes/types/note.types";
 import { searchHistory } from "../api/search.api";
@@ -38,6 +40,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
 }
 
 function SearchPreview({ note, query, categories }: { note?: Note; query: string; categories: Category[] }) {
+  const detail = useGetNote(note?.id);
   if (!note)
     return (
       <div className="grid h-full place-items-center text-sm text-muted-foreground">
@@ -48,50 +51,74 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
     note.categoryIds.includes(category.id),
   );
   return (
-    <article className="scrollbar h-full overflow-y-auto p-8">
-      <div className="flex items-start justify-between">
-        <div className="flex flex-wrap gap-1.5">
-          {noteCategories.map((category) => (
-            <Badge
-              key={category.id}
-              style={{
-                background: `${category.color}14`,
-                color: category.color,
-              }}
-            >
-              {category.name}
-            </Badge>
-          ))}
+    <section className="scrollbar min-h-0 overflow-y-auto bg-[#f7f8fc]">
+      <div className="mx-auto flex min-h-full max-w-5xl flex-col p-8">
+        <div className="flex items-start justify-between">
+          <div className="flex flex-wrap gap-1.5">
+            {noteCategories.map((category) => (
+              <Badge
+                key={category.id}
+                style={{
+                  background: `${category.color}14`,
+                  color: category.color,
+                }}
+              >
+                {category.name}
+              </Badge>
+            ))}
+          </div>
+          <Button variant="ghost" size="icon" title="Pin memory">
+            <Pin size={16} />
+          </Button>
         </div>
-        <Button variant="ghost" size="icon" title="Pin memory">
-          <Pin size={16} />
-        </Button>
-      </div>
-      <h2 className="mb-2 mt-6 text-2xl leading-tight">
-        <Highlight text={note.title} query={query} />
-      </h2>
-      <p className="m-0 text-xs text-muted-foreground">
-        Edited {note.updatedAt} · {note.relatedIds.length} related memories
-      </p>
-      <div className="my-6 h-px bg-border" />
-      <p className="whitespace-pre-wrap text-[15px] leading-8 text-slate-600">
-        <Highlight text={note.content} query={query} />
-      </p>
-      <div className="mt-8 rounded-xl border-l-4 border-primary bg-accent/60 p-4">
-        <p className="m-0 text-xs font-semibold uppercase tracking-wider text-accent-foreground">
-          Memory context
+        <h2 className="mb-2 mt-6 text-2xl leading-tight">
+          <Highlight text={note.title} query={query} />
+        </h2>
+        <p className="m-0 text-xs text-muted-foreground">
+          Edited {note.updatedAt} · {detail.data?.relatedIds.length ?? note.relatedIds.length} related memories
         </p>
-        <p className="mb-0 mt-2 text-sm leading-6 text-muted-foreground">
-          Connected to {noteCategories.map((item) => item.name).join(", ")}. Use
-          fullscreen to edit content or inspect related memories.
-        </p>
+        <div className="my-6 h-px bg-border" />
+        <div className="flex-1">
+          {detail.isPending && (
+            <div className="rounded-3xl border bg-white p-10 text-sm text-muted-foreground shadow-sm">
+              Loading memory…
+            </div>
+          )}
+          {detail.isError && (
+            <ErrorMessage message={getApiErrorMessage(detail.error)} />
+          )}
+          {detail.data && (
+            <NoteContent
+              html={detail.data.contentHtml}
+              searchQuery={query}
+              activeIndex={0}
+              onMatchCountChange={() => {}}
+              onActiveIndexChange={() => {}}
+              onWideTableChange={() => {}}
+              inline
+            />
+          )}
+        </div>
+        <div className="mt-8 rounded-xl border-l-4 border-primary bg-accent/60 p-4">
+          <p className="m-0 text-xs font-semibold uppercase tracking-wider text-accent-foreground">
+            Memory context
+          </p>
+          <p className="mb-0 mt-2 text-sm leading-6 text-muted-foreground">
+            Connected to {noteCategories.map((item) => item.name).join(", ")}. Use
+            fullscreen to edit content or inspect related memories.
+          </p>
+        </div>
+        <div className="sticky bottom-0 mt-6 pb-2 pt-4">
+          <div className="rounded-2xl bg-gradient-to-t from-[#f7f8fc] via-[#f7f8fc]/95 to-transparent p-1">
+            <Button asChild className="w-full shadow-sm">
+              <Link to={`/notes/${note.id}`} className="no-underline">
+                Open full memory <ArrowUpRight size={15} />
+              </Link>
+            </Button>
+          </div>
+        </div>
       </div>
-      <Button asChild className="mt-6">
-        <Link to={`/notes/${note.id}`} className="no-underline">
-          Open full memory <ArrowUpRight size={15} />
-        </Link>
-      </Button>
-    </article>
+    </section>
   );
 }
 

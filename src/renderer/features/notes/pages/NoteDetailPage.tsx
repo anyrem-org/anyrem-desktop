@@ -17,6 +17,7 @@ export function NoteDetailPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [matchCount, setMatchCount] = useState(0);
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
+  const [fullContent, setFullContent] = useState(false);
   const autoCollapsedRef = useRef(false);
 
   const cycleMatch = (step: number) => {
@@ -45,6 +46,8 @@ export function NoteDetailPage() {
           searchQuery={searchQuery}
           matchCount={matchCount}
           activeIndex={activeMatchIndex}
+          fullContent={fullContent}
+          onToggleFullContent={() => setFullContent((value) => !value)}
           onSearchChange={(value) => {
             setSearchQuery(value);
             setActiveMatchIndex(0);
@@ -56,6 +59,7 @@ export function NoteDetailPage() {
           html={note.contentHtml}
           searchQuery={searchQuery}
           activeIndex={activeMatchIndex}
+          fullContent={fullContent}
           onMatchCountChange={setMatchCount}
           onActiveIndexChange={setActiveMatchIndex}
           onWideTableChange={(hasWide) => {
@@ -66,7 +70,7 @@ export function NoteDetailPage() {
           }}
         />
       </section>
-      <RightInsightPanel notes={related} open={panelOpen} />
+      <RightInsightPanel notes={related} open={panelOpen && !fullContent} />
     </div>
   );
 }

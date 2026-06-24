@@ -8,6 +8,8 @@ type Props = {
   onMatchCountChange: (count: number) => void;
   onActiveIndexChange: (index: number) => void;
   onWideTableChange: (hasWide: boolean) => void;
+  inline?: boolean;
+  fullContent?: boolean;
 };
 
 export function NoteContent({
@@ -17,6 +19,8 @@ export function NoteContent({
   onMatchCountChange,
   onActiveIndexChange,
   onWideTableChange,
+  inline = false,
+  fullContent = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -104,16 +108,20 @@ export function NoteContent({
     marks[nextIndex]?.scrollIntoView({ block: "center", inline: "nearest" });
   }, [activeIndex, html, onActiveIndexChange, onMatchCountChange, onWideTableChange, searchQuery]);
 
+  const content = (
+    <article className="overflow-hidden rounded-3xl border bg-white p-10 shadow-sm">
+      <div
+        ref={containerRef}
+        className="note-preview tiptap max-w-full text-base leading-8 text-slate-600"
+      />
+    </article>
+  );
+
+  if (inline) return content;
+
   return (
     <div className="scrollbar flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-7xl px-8 py-8">
-        <article className="overflow-hidden rounded-3xl border bg-white p-10 shadow-sm">
-          <div
-            ref={containerRef}
-            className="note-preview tiptap max-w-full text-base leading-8 text-slate-600"
-          />
-        </article>
-      </div>
+      <div className={fullContent ? "mx-auto max-w-none px-8 py-8" : "mx-auto max-w-7xl px-8 py-8"}>{content}</div>
     </div>
   );
 }
