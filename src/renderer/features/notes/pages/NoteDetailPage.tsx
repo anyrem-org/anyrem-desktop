@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getApiErrorMessage } from "../../../shared/lib/api-client";
 import { ErrorMessage } from "../../../shared/components/ErrorMessage";
-import { useGetNote, useGetNotes } from "../hooks/useNotes";
+import { useGetNote, useGetNotes, usePinNote } from "../hooks/useNotes";
 import { useUiStore } from "../../../shared/store/ui.store";
 import { NoteContent } from "../components/NoteContent";
 import { NoteHeader } from "../components/NoteHeader";
@@ -12,6 +12,7 @@ export function NoteDetailPage() {
   const { id } = useParams();
   const query = useGetNote(id);
   const noteList = useGetNotes({ page: 1, limit: 100 });
+  const pinNote = usePinNote();
   const panelOpen = useUiStore((state) => state.activityOpen);
   const setPanelOpen = useUiStore((state) => state.setActivityOpen);
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,6 +49,8 @@ export function NoteDetailPage() {
           activeIndex={activeMatchIndex}
           fullContent={fullContent}
           onToggleFullContent={() => setFullContent((value) => !value)}
+          onTogglePin={() => pinNote.mutate({ id: note.id, pinned: !note.pinned })}
+          pinPending={pinNote.isPending}
           onSearchChange={(value) => {
             setSearchQuery(value);
             setActiveMatchIndex(0);

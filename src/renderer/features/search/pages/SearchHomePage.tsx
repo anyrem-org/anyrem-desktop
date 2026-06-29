@@ -15,7 +15,7 @@ import {
 import { getApiErrorMessage } from "../../../shared/lib/api-client";
 import { useGetCategories } from "../../categories/hooks/useCategories";
 import { NoteContent } from "../../notes/components/NoteContent";
-import { useGetNote } from "../../notes/hooks/useNotes";
+import { useGetNote, usePinNote } from "../../notes/hooks/useNotes";
 import type { Category } from "../../categories/types/category.types";
 import type { Note } from "../../notes/types/note.types";
 import { useSearchHistory, useSearchNotes } from "../hooks/useSearch";
@@ -40,6 +40,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
 
 function SearchPreview({ note, query, categories }: { note?: Note; query: string; categories: Category[] }) {
   const detail = useGetNote(note?.id);
+  const pinNote = usePinNote();
   if (!note)
     return (
       <div className="grid h-full place-items-center text-sm text-muted-foreground">
@@ -49,6 +50,7 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
   const noteCategories = categories.filter((category) =>
     note.categoryIds.includes(category.id),
   );
+  const pinned = detail.data?.pinned ?? note.pinned ?? false;
   return (
     <section className="scrollbar min-h-0 overflow-y-auto bg-[#f7f8fc]">
       <div className="mx-auto flex min-h-full max-w-5xl flex-col p-8">
@@ -66,7 +68,13 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
               </Badge>
             ))}
           </div>
-          <Button variant="ghost" size="icon" title="Pin memory">
+          <Button
+            variant="ghost"
+            size="icon"
+            title={pinned ? "Unpin memory" : "Pin memory"}
+            onClick={() => pinNote.mutate({ id: note.id, pinned: !pinned })}
+            disabled={pinNote.isPending}
+          >
             <Pin size={16} />
           </Button>
         </div>

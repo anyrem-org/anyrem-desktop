@@ -14,6 +14,8 @@ type Props = {
   onNextMatch: () => void;
   fullContent: boolean;
   onToggleFullContent: () => void;
+  onTogglePin: () => void;
+  pinPending?: boolean;
 };
 
 export function NoteHeader({
@@ -26,6 +28,8 @@ export function NoteHeader({
   onNextMatch,
   fullContent,
   onToggleFullContent,
+  onTogglePin,
+  pinPending,
 }: Props) {
   const navigate = useNavigate();
   const goBack = () =>
@@ -72,7 +76,15 @@ export function NoteHeader({
                 {fullContent ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                 {fullContent ? "Normal view" : "Full content"}
               </Button>
-              <Button type="button" variant="outline" size="icon" className="rounded-xl">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="rounded-xl"
+                onClick={onTogglePin}
+                disabled={pinPending}
+                title={note.pinned ? "Unpin memory" : "Pin memory"}
+              >
                 <Pin size={17} />
               </Button>
               <Button asChild className="rounded-xl px-4">

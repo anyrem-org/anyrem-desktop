@@ -92,3 +92,4 @@ export const getNotes = (filters: NoteFilters) => apiClient.get<Paginated<ApiNot
 export const getNote = (id: string) => apiClient.get<ApiNote>(`/notes/${id}`).then(({ data }) => mapNote(data));
 export const createNote = (input: NoteInput) => apiClient.post<ApiNote>("/notes", input).then(({ data }) => mapNote(data));
 export const updateNote = ({ id, input }: { id: string; input: NoteInput }) => apiClient.patch<ApiNote>(`/notes/${id}`, input).then(({ data }) => mapNote(data));
+export const pinNote = ({ id, pinned }: { id: string; pinned: boolean }) => apiClient.patch<{ pinned: boolean }>(`/notes/${id}/pin`, { pinned }).then(({ data }) => data);
