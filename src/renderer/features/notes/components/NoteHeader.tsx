@@ -1,5 +1,5 @@
 import { ArrowLeft, Edit3, Maximize2, Minimize2, Pin } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../../shared/components/ui/button";
 import type { NoteRecord } from "../types/note.types";
 import { NoteSearchBar } from "./NoteSearchBar";
@@ -27,18 +27,22 @@ export function NoteHeader({
   fullContent,
   onToggleFullContent,
 }: Props) {
+  const navigate = useNavigate();
+  const goBack = () =>
+    window.history.length > 1 ? navigate(-1) : navigate("/search");
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200 bg-[#f7f8fc]/95 backdrop-blur">
       <div className="mx-auto max-w-7xl px-8 pb-6 pt-8">
         <div className="flex flex-col gap-5">
           <div className="flex items-start gap-4">
             <div className="min-w-0 flex-1">
-              <Link
-                to="/search"
-                className="inline-flex items-center gap-2 text-sm text-slate-500 no-underline"
+              <button
+                type="button"
+                onClick={goBack}
+                className="inline-flex items-center gap-2 border-0 bg-transparent p-0 text-sm text-slate-500"
               >
-                <ArrowLeft size={16} /> Back to search
-              </Link>
+                <ArrowLeft size={16} /> Back
+              </button>
               <div className="mt-5">
                 <span
                   className="rounded-full px-3 py-1 text-xs font-semibold"

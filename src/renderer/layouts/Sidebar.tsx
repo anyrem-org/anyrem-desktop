@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  CalendarCheck,
   FolderKanban,
   Home,
   Network,
@@ -17,7 +16,6 @@ const items = [
   ["/notes/new", Plus, "New note"],
   ["/categories", FolderKanban, "Categories"],
   ["/graph", Network, "Graph"],
-  ["/recap", CalendarCheck, "Daily recap"],
   ["/settings", Settings, "Settings"],
 ] as const;
 
@@ -53,16 +51,6 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 p-3 text-xs text-slate-500">
-        {open ? (
-          <>
-            <strong className="text-slate-700">5 notes</strong>
-            <p className="mb-0">captured this week</p>
-          </>
-        ) : (
-          <span className="font-bold text-primary">5</span>
-        )}
-      </div>
     </aside>
   );
 }

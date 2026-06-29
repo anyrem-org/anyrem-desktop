@@ -2,11 +2,13 @@ import { Search, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../shared/components/ui/button";
-import { searchHistory } from "../../search/api/search.api";
+import { useSearchHistory } from "../../search/hooks/useSearch";
 
 export function DashboardSearch() {
   const [query, setQuery] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
   const navigate = useNavigate();
+  const history = useSearchHistory(historyOpen);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`);
@@ -28,23 +30,28 @@ export function DashboardSearch() {
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onFocus={() => setHistoryOpen(true)}
           className="h-11 min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-slate-900 outline-none"
           placeholder="Search notes, decisions, ideas..."
         />
         <Button>Search</Button>
       </form>
-      <div className="mt-4 flex items-center gap-2">
-        <span className="text-xs text-slate-500">Recent</span>
-        {searchHistory.slice(0, 3).map((item) => (
+      {historyOpen && (history.data?.length ?? 0) > 0 && (
+        <div className="mt-4 flex items-center gap-2">
+          <span className="text-xs text-slate-500">Recent</span>
+          {history.data?.slice(0, 3).map((item) => (
           <button
-            key={item}
-            onClick={() => navigate(`/search?q=${encodeURIComponent(item)}`)}
+            key={item.id}
+            onClick={() =>
+              navigate(`/search?q=${encodeURIComponent(item.keyword)}`)
+            }
             className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
           >
-            {item}
+            {item.keyword}
           </button>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

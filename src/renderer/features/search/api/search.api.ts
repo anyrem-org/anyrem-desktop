@@ -2,8 +2,14 @@ import { apiClient } from "../../../shared/lib/api-client";
 import type { Paginated } from "../../../shared/types/api.types";
 import type { Note } from "../../notes/types/note.types";
 
-export const searchHistory = ["electron sync", "tìm kiếm tiếng Việt", "daily recap"];
 export const suggestions = ["offline-first", "Meilisearch", "Tiptap", "product ideas"];
+
+export type SearchHistoryItem = {
+  id: string;
+  keyword: string;
+  searchCount: number;
+  lastSearchedAt: string;
+};
 
 export type SearchNoteFilters = {
   q: string;
@@ -42,3 +48,9 @@ export const searchNotes = (filters: SearchNoteFilters) =>
       pinned: note.pinned,
     })),
   }));
+
+export const getSearchHistory = () =>
+  apiClient.get<SearchHistoryItem[]>("/search/history").then(({ data }) => data);
+
+export const clearSearchHistory = () =>
+  apiClient.delete<{ deleted: true }>("/search/history").then(({ data }) => data);

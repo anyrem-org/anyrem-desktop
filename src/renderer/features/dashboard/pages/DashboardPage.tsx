@@ -1,11 +1,4 @@
-import {
-  ArrowRight,
-  CalendarCheck,
-  ChevronRight,
-  Folder,
-  History,
-  NotebookPen,
-} from "lucide-react";
+import { ArrowRight, ChevronRight, Folder, History, NotebookPen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { Badge } from "../../../shared/components/ui/badge";
@@ -175,33 +168,6 @@ export function DashboardPage() {
               {!dashboard.isPending && !topCategories.length && (
                 <p className="text-sm text-muted-foreground">No focus topics yet.</p>
               )}
-            </CardContent>
-          </Card>
-          <Card className="overflow-hidden border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <span className="grid size-10 place-items-center rounded-xl bg-white text-primary shadow-sm">
-                  <CalendarCheck size={19} />
-                </span>
-                <Badge className="bg-white text-green-700">
-                  Ready at 22:00
-                </Badge>
-              </div>
-              <h3 className="mb-2 mt-5 text-base">Daily recap preview</h3>
-              <p className="text-sm leading-6 text-muted-foreground">
-                Today you captured {data?.recapPreview.noteCount ?? today.length} memories across{" "}
-                {new Set(today.flatMap((note) => note.categoryIds)).size}{" "}
-                topics. Review them before the day fades.
-              </p>
-              <Button
-                variant="outline"
-                className="mt-2 w-full bg-white"
-                asChild
-              >
-                <Link to="/recap" className="no-underline">
-                  Open today’s recap <ArrowRight size={14} />
-                </Link>
-              </Button>
             </CardContent>
           </Card>
         </aside>

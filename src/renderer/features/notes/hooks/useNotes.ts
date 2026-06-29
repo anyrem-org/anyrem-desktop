@@ -10,6 +10,7 @@ export const useGetNote = (id?: string) => { const authenticated = useAuthStore(
 const invalidateNoteLists = (client: ReturnType<typeof useQueryClient>) => Promise.all([
   client.invalidateQueries({ queryKey: noteKeys.all }),
   client.invalidateQueries({ queryKey: ["categories"] }),
+  client.invalidateQueries({ queryKey: ["graph"] }),
   client.invalidateQueries({ queryKey: ["search", "notes"] }),
 ]);
 

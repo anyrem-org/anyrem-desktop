@@ -18,8 +18,7 @@ import { NoteContent } from "../../notes/components/NoteContent";
 import { useGetNote } from "../../notes/hooks/useNotes";
 import type { Category } from "../../categories/types/category.types";
 import type { Note } from "../../notes/types/note.types";
-import { searchHistory } from "../api/search.api";
-import { useSearchNotes } from "../hooks/useSearch";
+import { useSearchHistory, useSearchNotes } from "../hooks/useSearch";
 
 type Filter = "all" | "today" | "pinned";
 
@@ -99,15 +98,6 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
             />
           )}
         </div>
-        <div className="mt-8 rounded-xl border-l-4 border-primary bg-accent/60 p-4">
-          <p className="m-0 text-xs font-semibold uppercase tracking-wider text-accent-foreground">
-            Memory context
-          </p>
-          <p className="mb-0 mt-2 text-sm leading-6 text-muted-foreground">
-            Connected to {noteCategories.map((item) => item.name).join(", ")}. Use
-            fullscreen to edit content or inspect related memories.
-          </p>
-        </div>
         <div className="sticky bottom-0 mt-6 pb-2 pt-4">
           <div className="rounded-2xl bg-gradient-to-t from-[#f7f8fc] via-[#f7f8fc]/95 to-transparent p-1">
             <Button asChild className="w-full shadow-sm">
@@ -126,6 +116,7 @@ export function SearchHomePage() {
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [focused, setFocused] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState("relevance");
   const [categoryId, setCategoryId] = useState("all");
@@ -145,6 +136,7 @@ export function SearchHomePage() {
     from: filter === "today" ? today.toISOString() : undefined,
     sort: sort as "relevance" | "recent",
   });
+  const history = useSearchHistory(historyOpen);
   const results = search.data?.items ?? [];
   const selected = results.find((note) => note.id === selectedId) ?? results[0];
   useEffect(() => setPage(1), [deferredQuery, filter, sort, categoryId]);
@@ -166,10 +158,12 @@ export function SearchHomePage() {
           >
             <Search className="ml-3 text-muted-foreground" size={18} />
             <input
-              autoFocus
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              onFocus={() => setFocused(true)}
+              onFocus={() => {
+                setFocused(true);
+                setHistoryOpen(true);
+              }}
               onBlur={() => setTimeout(() => setFocused(false), 120)}
               onKeyDown={(event) => {
                 if (event.key === "ArrowDown") {
@@ -209,16 +203,26 @@ export function SearchHomePage() {
             <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Recent searches
             </p>
-            {searchHistory.map((item) => (
+            {history.isFetching && (
+              <p className="px-2 py-2 text-xs text-muted-foreground">
+                Loading…
+              </p>
+            )}
+            {(history.data ?? []).map((item) => (
               <button
-                key={item}
-                onMouseDown={() => setQuery(item)}
+                key={item.id}
+                onMouseDown={() => setQuery(item.keyword)}
                 className="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-2 py-2 text-left text-xs hover:bg-muted"
               >
                 <Clock3 size={13} />
-                {item}
+                {item.keyword}
               </button>
             ))}
+            {!history.isFetching && !(history.data ?? []).length && (
+              <p className="px-2 py-2 text-xs text-muted-foreground">
+                No recent searches.
+              </p>
+            )}
           </div>
         )}
         <div className="mt-3 flex items-center gap-2">

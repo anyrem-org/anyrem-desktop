@@ -28,10 +28,14 @@ import {
   Save,
   Strikethrough,
   Table2,
+  TableCellsMerge,
+  TableCellsSplit,
+  TableColumnsSplit,
+  TableProperties,
+  TableRowsSplit,
+  Trash2,
   Underline as UnderlineIcon,
   Undo2,
-  Maximize2,
-  Minimize2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -61,8 +65,6 @@ export function NoteEditorPage() {
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const { data: categoryItems = [] } = useGetCategories();
   const [relatedIds, setRelatedIds] = useState<string[]>([]);
-  const [fullContent, setFullContent] = useState(false);
-  const activityOpen = useUiStore((state) => state.activityOpen);
   const setActivityOpen = useUiStore((state) => state.setActivityOpen);
   const existing = useGetNote(id);
   // ponytail: local selector covers first 100 notes; switch to async search when needed.
@@ -70,7 +72,6 @@ export function NoteEditorPage() {
   const create = useCreateNote();
   const update = useUpdateNote();
   const initialized = useRef(false);
-  const activityBeforeFullContent = useRef(activityOpen);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -96,17 +97,8 @@ export function NoteEditorPage() {
     setRelatedIds(existing.data.relatedIds);
     editor.commands.setContent(existing.data.contentJson);
   }, [editor, existing.data]);
+  useEffect(() => setActivityOpen(false), [setActivityOpen]);
   const mutation = id ? update : create;
-  const toggleFullContent = () => {
-    if (fullContent) {
-      setFullContent(false);
-      setActivityOpen(activityBeforeFullContent.current);
-      return;
-    }
-    activityBeforeFullContent.current = activityOpen;
-    setActivityOpen(false);
-    setFullContent(true);
-  };
   const save = () => {
     if (!editor || !title.trim()) return;
     const input = { title: title.trim(), contentJson: editor.getJSON(), categoryIds, relatedIds };
@@ -233,10 +225,50 @@ export function NoteEditorPage() {
               .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
               .run(),
         },
+        {
+          icon: TableRowsSplit,
+          label: "Add row",
+          run: () => editor.chain().focus().addRowAfter().run(),
+        },
+        {
+          icon: Trash2,
+          label: "Delete row",
+          run: () => editor.chain().focus().deleteRow().run(),
+        },
+        {
+          icon: TableColumnsSplit,
+          label: "Add column",
+          run: () => editor.chain().focus().addColumnAfter().run(),
+        },
+        {
+          icon: Trash2,
+          label: "Delete column",
+          run: () => editor.chain().focus().deleteColumn().run(),
+        },
+        {
+          icon: TableProperties,
+          label: "Toggle header row",
+          run: () => editor.chain().focus().toggleHeaderRow().run(),
+        },
+        {
+          icon: TableCellsMerge,
+          label: "Merge cells",
+          run: () => editor.chain().focus().mergeCells().run(),
+        },
+        {
+          icon: TableCellsSplit,
+          label: "Split cell",
+          run: () => editor.chain().focus().splitCell().run(),
+        },
+        {
+          icon: Trash2,
+          label: "Delete table",
+          run: () => editor.chain().focus().deleteTable().run(),
+        },
       ]
     : [];
   return (
-    <div className={fullContent ? "flex h-full min-h-0 flex-col p-8" : "mx-auto flex h-full min-h-0 max-w-7xl flex-col p-8"}>
+    <div className="flex h-full min-h-0 flex-col p-8">
       <div className="mb-6 shrink-0 flex items-center justify-between">
         <div>
           <h2 className="mb-1 text-2xl">{id ? "Edit memory" : "Create a new memory"}</h2>
@@ -245,10 +277,6 @@ export function NoteEditorPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" onClick={toggleFullContent}>
-            {fullContent ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            {fullContent ? "Normal view" : "Full content"}
-          </Button>
           <Button onClick={save} disabled={mutation.isPending || !title.trim()}>
             <Save size={16} /> {mutation.isPending ? "Saving…" : "Save memory"}
           </Button>
@@ -294,7 +322,7 @@ export function NoteEditorPage() {
         </div>
         <EditorContent editor={editor} className="note-editor min-h-0 flex-1 overflow-hidden px-7 py-4" />
       </Card>
-      {!fullContent && <div className="mt-4 shrink-0 grid grid-cols-2 gap-4">
+      <div className="mt-4 shrink-0 grid grid-cols-2 gap-4">
         <Card className="p-4">
           <div className="flex flex-col gap-1.5">
             <div className="flex h-8 items-center justify-between">
@@ -343,7 +371,7 @@ export function NoteEditorPage() {
             />
           </div>
         </Card>
-      </div>}
+      </div>
     </div>
   );
 }

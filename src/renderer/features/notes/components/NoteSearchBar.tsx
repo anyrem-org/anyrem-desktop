@@ -28,6 +28,11 @@ export function NoteSearchBar({
         <Input
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || !matchCount) return;
+            event.preventDefault();
+            event.shiftKey ? onPrevious() : onNext();
+          }}
           placeholder="Search in current note"
           className="h-8 border-0 px-0 py-0 shadow-none focus-visible:ring-0"
         />

@@ -37,6 +37,8 @@ export function CategoryDetailPage() {
   };
   const notes = useGetCategoryNotes(id, filters);
   const remove = useDeleteCategory();
+  const goBack = () =>
+    window.history.length > 1 ? navigate(-1) : navigate("/categories");
   useEffect(() => setPage(1), [deferredQuery, pinned, from, to, sort]);
   if (category.isPending)
     return (
@@ -46,18 +48,16 @@ export function CategoryDetailPage() {
     return (
       <div className="p-8">
         <ErrorMessage message={getApiErrorMessage(category.error)} className="mb-4" />
-        <Button asChild variant="outline">
-          <Link to="/categories">Back</Link>
+        <Button type="button" onClick={goBack} variant="outline">
+          Back
         </Button>
       </div>
     );
   const item = category.data;
   return (
     <div className="mx-auto max-w-7xl p-8">
-      <Button variant="ghost" asChild className="mb-5">
-        <Link to="/categories" className="no-underline">
-          <ArrowLeft size={16} /> Categories
-        </Link>
+      <Button type="button" variant="ghost" onClick={goBack} className="mb-5">
+        <ArrowLeft size={16} /> Back
       </Button>
       {remove.isError && <ErrorMessage message={getApiErrorMessage(remove.error)} className="mb-5" />}
       <div className="mb-7 flex items-center gap-4">
@@ -132,20 +132,22 @@ export function CategoryDetailPage() {
         <>
         <div className="grid grid-cols-2 gap-4">
           {notes.data.items.map((note) => (
-            <Card key={note.id}>
-              <CardContent className="p-5">
-                <div className="flex items-start gap-2">
-                  <h3 className="m-0 flex-1 text-sm"><Link to={`/notes/${note.id}`}>{note.title}</Link></h3>
-                  {note.pinned && <Pin size={14} className="text-primary" />}
-                </div>
-                <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
-                  {note.contentText}
-                </p>
-                <span className="text-xs text-muted-foreground">
-                  Updated {new Date(note.updatedAt).toLocaleString()}
-                </span>
-              </CardContent>
-            </Card>
+            <Link key={note.id} to={`/notes/${note.id}`} className="no-underline">
+              <Card className="h-full transition hover:border-primary/30 hover:shadow-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-2">
+                    <h3 className="m-0 flex-1 text-sm text-foreground">{note.title}</h3>
+                    {note.pinned && <Pin size={14} className="text-primary" />}
+                  </div>
+                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
+                    {note.contentText}
+                  </p>
+                  <span className="text-xs text-muted-foreground">
+                    Updated {new Date(note.updatedAt).toLocaleString()}
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
         <Pagination page={notes.data.page} totalPages={notes.data.totalPages} total={notes.data.total} onChange={setPage} />

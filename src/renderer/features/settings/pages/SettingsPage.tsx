@@ -1,5 +1,6 @@
 import { Bell, Database, Keyboard, Monitor, Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { Button } from "../../../shared/components/ui/button";
 import {
   Card,
@@ -16,6 +17,17 @@ import {
   SelectValue,
 } from "../../../shared/components/ui/select";
 import { Switch } from "../../../shared/components/ui/switch";
+import { getApiErrorMessage } from "../../../shared/lib/api-client";
+import { useUiStore } from "../../../shared/store/ui.store";
+import { useClearSearchHistory } from "../../search/hooks/useSearch";
+import type { Theme, TypoTolerance } from "../api/settings.api";
+import {
+  useConfigureTelegram,
+  useRemoveTelegram,
+  useSettings,
+  useTestTelegram,
+  useUpdateSettings,
+} from "../hooks/useSettings";
 
 function SettingRow({
   title,
@@ -30,207 +42,426 @@ function SettingRow({
     <div className="flex items-center justify-between gap-5 border-t py-4 first:border-0 first:pt-0 last:pb-0">
       <div>
         <Label>{title}</Label>
-        <p className="mb-0 mt-1 text-xs text-muted-foreground">{description}</p>
+        <p className="mb-0 mt-1 text-xs text-muted-foreground">
+          {description}
+        </p>
       </div>
       {children}
     </div>
   );
 }
 
+const shortcutKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  if (event.key === "Escape") return "";
+  if (["Control", "Meta", "Alt", "Shift"].includes(event.key)) return null;
+  const keys = [
+    event.ctrlKey || event.metaKey ? "Ctrl/Cmd" : undefined,
+    event.altKey ? "Alt" : undefined,
+    event.shiftKey ? "Shift" : undefined,
+    event.key.length === 1 ? event.key.toUpperCase() : event.key,
+  ].filter(Boolean);
+  return keys.length > 1 ? keys.join("+") : null;
+};
+
 export function SettingsPage() {
-  const [searchAsType, setSearchAsType] = useState(true);
-  const [history, setHistory] = useState(true);
-  const [rightPanel, setRightPanel] = useState(true);
-  const [compact, setCompact] = useState(false);
-  const [recap, setRecap] = useState(true);
+  const settings = useSettings();
+  const update = useUpdateSettings();
+  const clearHistory = useClearSearchHistory();
+  const configureTelegram = useConfigureTelegram();
+  const testTelegram = useTestTelegram();
+  const removeTelegram = useRemoveTelegram();
+  const setActivityOpen = useUiStore((state) => state.setActivityOpen);
+  const data = settings.data;
+  const [quickSearch, setQuickSearch] = useState(
+    () => localStorage.getItem("quickSearchShortcut") ?? "Ctrl/Cmd+Alt+Space",
+  );
+  const [quickCreate, setQuickCreate] = useState(
+    () => localStorage.getItem("quickCreateShortcut") ?? "Ctrl/Cmd+Alt+N",
+  );
+  const [botToken, setBotToken] = useState("");
+  const [chatId, setChatId] = useState("");
+
+  useEffect(() => {
+    if (!data) return;
+    setActivityOpen(data.appearance.show_activity_panel);
+  }, [data, setActivityOpen]);
+
+  const save = (type: "appearance" | "search" | "recap", key: string, value: string | boolean) =>
+    update.mutate([{ type, key, value }]);
+  const captureShortcut =
+    (setValue: (value: string) => void, storageKey: string) =>
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      event.preventDefault();
+      const value = shortcutKey(event);
+      if (value === null) return;
+      setValue(value);
+      localStorage.setItem(storageKey, value);
+    };
+
   return (
     <div className="mx-auto max-w-7xl p-8">
       <h2 className="mb-1 text-2xl">Settings</h2>
       <p className="mt-0 text-sm text-muted-foreground">
         Configure how Remember Anything behaves.
       </p>
-      <div className="mt-7 space-y-5">
-        <Card>
-          <CardHeader className="flex-row items-center gap-3 space-y-0">
-            <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
-              <Search size={18} />
-            </span>
-            <div>
-              <h3 className="m-0 text-base">Search</h3>
-              <p className="m-0 text-xs text-muted-foreground">
-                Recall behavior and history.
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <SettingRow
-              title="Search as you type"
-              description="Update results while entering a query."
-            >
-              <Switch
-                checked={searchAsType}
-                onCheckedChange={setSearchAsType}
-              />
-            </SettingRow>
-            <SettingRow
-              title="Save search history"
-              description="Show recent searches when the field is focused."
-            >
-              <Switch checked={history} onCheckedChange={setHistory} />
-            </SettingRow>
-            <SettingRow
-              title="Typo tolerance"
-              description="Allow light spelling mistakes in mock search."
-            >
-              <Select defaultValue="balanced">
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="balanced">Balanced</SelectItem>
-                  <SelectItem value="strict">Strict</SelectItem>
-                  <SelectItem value="flexible">Flexible</SelectItem>
-                </SelectContent>
-              </Select>
-            </SettingRow>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex-row items-center gap-3 space-y-0">
-            <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
-              <Monitor size={18} />
-            </span>
-            <div>
-              <h3 className="m-0 text-base">Appearance</h3>
-              <p className="m-0 text-xs text-muted-foreground">
-                Desktop layout preferences.
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <SettingRow
-              title="Recently active panel"
-              description="Show activity panel when app opens."
-            >
-              <Switch checked={rightPanel} onCheckedChange={setRightPanel} />
-            </SettingRow>
-            <SettingRow
-              title="Compact density"
-              description="Reduce spacing to fit more memories."
-            >
-              <Switch checked={compact} onCheckedChange={setCompact} />
-            </SettingRow>
-            <SettingRow
-              title="Theme"
-              description="Current phase supports light mode."
-            >
-              <Select defaultValue="light">
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark" disabled>
-                    Dark — later
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </SettingRow>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex-row items-center gap-3 space-y-0">
-            <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
-              <Bell size={18} />
-            </span>
-            <div>
-              <h3 className="m-0 text-base">Daily recap</h3>
-              <p className="m-0 text-xs text-muted-foreground">
-                Mock configuration; delivery needs backend.
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <SettingRow
-              title="Enable daily recap"
-              description="Prepare a summary of memories captured today."
-            >
-              <Switch checked={recap} onCheckedChange={setRecap} />
-            </SettingRow>
-            <SettingRow
-              title="Delivery time"
-              description="Local time for the scheduled recap."
-            >
-              <Input
-                type="time"
-                defaultValue="22:00"
-                className="w-32"
-                disabled={!recap}
-              />
-            </SettingRow>
-            <SettingRow
-              title="Telegram chat ID"
-              description="Stored after backend integration."
-            >
-              <Input
-                placeholder="e.g. 123456789"
-                className="w-48"
-                disabled={!recap}
-              />
-            </SettingRow>
-            <Button variant="outline" className="mt-5" disabled={!recap}>
-              Send test recap
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex-row items-center gap-3 space-y-0">
-            <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
-              <Keyboard size={18} />
-            </span>
-            <div>
-              <h3 className="m-0 text-base">Quick access</h3>
-              <p className="m-0 text-xs text-muted-foreground">
-                Open lightweight windows while app runs in background.
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between rounded-xl bg-muted/60 p-3">
-              <span className="text-sm">Quick Search</span>
-              <kbd className="rounded-lg border bg-background px-2.5 py-1 text-xs">
-                Ctrl/⌘ + Space
-              </kbd>
-            </div>
-            <div className="flex items-center justify-between rounded-xl bg-muted/60 p-3">
-              <span className="text-sm">Quick Create</span>
-              <kbd className="rounded-lg border bg-background px-2.5 py-1 text-xs">
-                Ctrl/⌘ + Shift + N
-              </kbd>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex-row items-center gap-3 space-y-0">
-            <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
-              <Database size={18} />
-            </span>
-            <div>
-              <h3 className="m-0 text-base">Data</h3>
-              <p className="m-0 text-xs text-muted-foreground">
-                Mock data management.
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent className="flex gap-3">
-            <Button variant="outline">Export memories</Button>
-            <Button variant="outline">Clear search history</Button>
-            <Button variant="destructive" className="ml-auto">
-              Reset mock data
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      {settings.isPending && (
+        <p className="mt-7 text-sm text-muted-foreground">Loading settings...</p>
+      )}
+      {settings.isError && (
+        <ErrorMessage
+          message={getApiErrorMessage(settings.error)}
+          className="mt-7"
+        />
+      )}
+      {data && (
+        <div className="mt-7 space-y-5">
+          <Card>
+            <CardHeader className="flex-row items-center gap-3 space-y-0">
+              <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
+                <Search size={18} />
+              </span>
+              <div>
+                <h3 className="m-0 text-base">Search</h3>
+                <p className="m-0 text-xs text-muted-foreground">
+                  Recall behavior and history.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <SettingRow
+                title="Search as you type"
+                description="Update results while entering a query."
+              >
+                <Switch
+                  checked={data.search.search_as_you_type}
+                  onCheckedChange={(value) =>
+                    save("search", "search_as_you_type", value)
+                  }
+                />
+              </SettingRow>
+              <SettingRow
+                title="Save search history"
+                description="Show recent searches when the field is focused."
+              >
+                <Switch
+                  checked={data.search.save_history}
+                  onCheckedChange={(value) =>
+                    save("search", "save_history", value)
+                  }
+                />
+              </SettingRow>
+              <SettingRow
+                title="Typo tolerance"
+                description="Allow light spelling mistakes in search."
+              >
+                <Select
+                  value={data.search.typo_tolerance}
+                  onValueChange={(value) =>
+                    save("search", "typo_tolerance", value as TypoTolerance)
+                  }
+                >
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BALANCED">Balanced</SelectItem>
+                    <SelectItem value="STRICT">Strict</SelectItem>
+                    <SelectItem value="FLEXIBLE">Flexible</SelectItem>
+                  </SelectContent>
+                </Select>
+              </SettingRow>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center gap-3 space-y-0">
+              <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
+                <Monitor size={18} />
+              </span>
+              <div>
+                <h3 className="m-0 text-base">Appearance</h3>
+                <p className="m-0 text-xs text-muted-foreground">
+                  Desktop layout preferences.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <SettingRow
+                title="Recently active panel"
+                description="Show activity panel when app opens."
+              >
+                <Switch
+                  checked={data.appearance.show_activity_panel}
+                  onCheckedChange={(value) => {
+                    setActivityOpen(value);
+                    save("appearance", "show_activity_panel", value);
+                  }}
+                />
+              </SettingRow>
+              <SettingRow
+                title="Compact density"
+                description="Reduce spacing to fit more memories."
+              >
+                <Switch
+                  checked={data.appearance.compact_density}
+                  onCheckedChange={(value) =>
+                    save("appearance", "compact_density", value)
+                  }
+                />
+              </SettingRow>
+              <SettingRow title="Theme" description="Choose app color mode.">
+                <Select
+                  value={data.appearance.theme}
+                  onValueChange={(value) =>
+                    save("appearance", "theme", value as Theme)
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LIGHT">Light</SelectItem>
+                    <SelectItem value="DARK">Dark</SelectItem>
+                    <SelectItem value="SYSTEM">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </SettingRow>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center gap-3 space-y-0">
+              <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
+                <Bell size={18} />
+              </span>
+              <div>
+                <h3 className="m-0 text-base">Daily recap</h3>
+                <p className="m-0 text-xs text-muted-foreground">
+                  Configure summary delivery.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <SettingRow
+                title="Enable daily recap"
+                description="Prepare a summary of memories captured today."
+              >
+                <Switch
+                  checked={data.recap.enabled}
+                  onCheckedChange={(value) => save("recap", "enabled", value)}
+                />
+              </SettingRow>
+              <SettingRow
+                title="Delivery time"
+                description="Local time for the scheduled recap."
+              >
+                <Input
+                  type="time"
+                  defaultValue={data.recap.delivery_time}
+                  className="w-32"
+                  disabled={!data.recap.enabled}
+                  onBlur={(event) =>
+                    save("recap", "delivery_time", event.target.value)
+                  }
+                />
+              </SettingRow>
+              <SettingRow
+                title="Email delivery"
+                description="Send daily recap by email."
+              >
+                <Switch
+                  checked={data.recap.email_enabled}
+                  disabled={!data.recap.enabled}
+                  onCheckedChange={(value) =>
+                    save("recap", "email_enabled", value)
+                  }
+                />
+              </SettingRow>
+              <SettingRow
+                title="Telegram delivery"
+                description="Send daily recap to configured Telegram chat."
+              >
+                <Switch
+                  checked={data.recap.telegram_enabled}
+                  disabled={!data.recap.enabled || !data.telegram.configured}
+                  onCheckedChange={(value) =>
+                    save("recap", "telegram_enabled", value)
+                  }
+                />
+              </SettingRow>
+              <Button
+                variant="outline"
+                className="mt-5"
+                disabled={!data.recap.enabled}
+              >
+                Send test recap
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center gap-3 space-y-0">
+              <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
+                <Bell size={18} />
+              </span>
+              <div>
+                <h3 className="m-0 text-base">Telegram</h3>
+                <p className="m-0 text-xs text-muted-foreground">
+                  {data.telegram.configured
+                    ? `Configured ${data.telegram.maskedChatId ?? ""}`
+                    : "Connect a Telegram bot and chat."}
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  type="password"
+                  placeholder="Bot token"
+                  value={botToken}
+                  onChange={(event) => setBotToken(event.target.value)}
+                />
+                <Input
+                  placeholder="Chat ID"
+                  value={chatId}
+                  onChange={(event) => setChatId(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="outline"
+                  disabled={
+                    configureTelegram.isPending || !botToken.trim() || !chatId.trim()
+                  }
+                  onClick={() =>
+                    configureTelegram.mutate({
+                      botToken: botToken.trim(),
+                      chatId: chatId.trim(),
+                    })
+                  }
+                >
+                  {configureTelegram.isPending ? "Saving..." : "Save Telegram"}
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!data.telegram.configured || testTelegram.isPending}
+                  onClick={() => testTelegram.mutate()}
+                >
+                  {testTelegram.isPending ? "Sending..." : "Send test"}
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!data.telegram.configured || removeTelegram.isPending}
+                  onClick={() => removeTelegram.mutate()}
+                >
+                  Remove Telegram
+                </Button>
+              </div>
+              {data.telegram.bot_username && (
+                <p className="m-0 text-xs text-muted-foreground">
+                  Bot: @{data.telegram.bot_username}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center gap-3 space-y-0">
+              <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
+                <Keyboard size={18} />
+              </span>
+              <div>
+                <h3 className="m-0 text-base">Quick access</h3>
+                <p className="m-0 text-xs text-muted-foreground">
+                  Local shortcuts for background windows.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between rounded-xl bg-muted/60 p-3">
+                <span className="text-sm">Quick Search</span>
+                <Input
+                  value={quickSearch}
+                  readOnly
+                  placeholder="Press shortcut"
+                  onKeyDown={captureShortcut(
+                    setQuickSearch,
+                    "quickSearchShortcut",
+                  )}
+                  onBlur={() =>
+                    localStorage.setItem("quickSearchShortcut", quickSearch)
+                  }
+                  className="h-8 w-48 text-xs"
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-muted/60 p-3">
+                <span className="text-sm">Quick Create</span>
+                <Input
+                  value={quickCreate}
+                  readOnly
+                  placeholder="Press shortcut"
+                  onKeyDown={captureShortcut(
+                    setQuickCreate,
+                    "quickCreateShortcut",
+                  )}
+                  onBlur={() =>
+                    localStorage.setItem("quickCreateShortcut", quickCreate)
+                  }
+                  className="h-8 w-48 text-xs"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center gap-3 space-y-0">
+              <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
+                <Database size={18} />
+              </span>
+              <div>
+                <h3 className="m-0 text-base">Data</h3>
+                <p className="m-0 text-xs text-muted-foreground">
+                  Account data actions.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-3">
+              <Button variant="outline" disabled>
+                Export memories
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => clearHistory.mutate()}
+                disabled={clearHistory.isPending}
+              >
+                {clearHistory.isPending
+                  ? "Clearing..."
+                  : "Clear search history"}
+              </Button>
+              {clearHistory.isError && (
+                <ErrorMessage
+                  message={getApiErrorMessage(clearHistory.error)}
+                  className="basis-full"
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          {(update.isError ||
+            configureTelegram.isError ||
+            testTelegram.isError ||
+            removeTelegram.isError) && (
+            <ErrorMessage
+              message={getApiErrorMessage(
+                update.error ??
+                  configureTelegram.error ??
+                  testTelegram.error ??
+                  removeTelegram.error,
+              )}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

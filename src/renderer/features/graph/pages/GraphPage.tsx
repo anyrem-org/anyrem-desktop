@@ -4,6 +4,8 @@ import {
   MarkerType,
   MiniMap,
   ReactFlow,
+  useEdgesState,
+  useNodesState,
   type Edge,
   type Node,
   type ReactFlowInstance,
@@ -17,13 +19,19 @@ import {
   Maximize2,
   Search,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { Button } from "../../../shared/components/ui/button";
 import { Input } from "../../../shared/components/ui/input";
-import { categories, getMemoryGraphRelations, notes } from "../api/graph.api";
+import { getApiErrorMessage } from "../../../shared/lib/api-client";
+import type { GraphCategory, GraphEdge, GraphNote } from "../api/graph.api";
 import { GraphInspector } from "../components/GraphInspector";
+import { useGetGraph } from "../hooks/useGraph";
 
 type Filter = "all" | "category" | "note";
+const emptyCategories: GraphCategory[] = [];
+const emptyNotes: GraphNote[] = [];
+const emptyGraphEdges: GraphEdge[] = [];
 const categoryPositions = [
   { x: 40, y: 40 },
   { x: 620, y: 40 },
@@ -45,6 +53,12 @@ export function GraphPage() {
   const [showRelated, setShowRelated] = useState(true);
   const [selectedId, setSelectedId] = useState<string>();
   const [instance, setInstance] = useState<ReactFlowInstance>();
+  const graphQuery = useGetGraph();
+  const categories = graphQuery.data?.categories ?? emptyCategories;
+  const notes = graphQuery.data?.notes ?? emptyNotes;
+  const graphEdges = graphQuery.data?.edges ?? emptyGraphEdges;
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const graph = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase();
     const categoryNodes: Node[] = categories.map((category, index) => {
@@ -155,7 +169,7 @@ export function GraphPage() {
           ? categoryNodes
           : noteNodes;
     const visibleIds = new Set(visibleNodes.map((node) => node.id));
-    const edges: Edge[] = getMemoryGraphRelations()
+    const edges: Edge[] = graphEdges
       .filter(
         (relation) =>
           visibleIds.has(relation.source) &&
@@ -198,7 +212,18 @@ export function GraphPage() {
         };
       });
     return { nodes: visibleNodes, edges };
-  }, [filter, query, selectedId, showRelated]);
+  }, [categories, filter, graphEdges, notes, query, selectedId, showRelated]);
+  useEffect(() => {
+    setNodes((current) =>
+      graph.nodes.map((node) => ({
+        ...node,
+        position:
+          current.find((item) => item.id === node.id)?.position ??
+          node.position,
+      })),
+    );
+    setEdges(graph.edges);
+  }, [graph, setEdges, setNodes]);
   return (
     <div className="flex h-full min-h-[700px] flex-col p-6">
       <div className="mb-4 flex items-end justify-between">
@@ -213,9 +238,15 @@ export function GraphPage() {
           <span>·</span>
           <span>{notes.length} memories</span>
           <span>·</span>
-          <span>{getMemoryGraphRelations().length} relations</span>
+          <span>{graphQuery.data?.edges.length ?? 0} relations</span>
         </div>
       </div>
+      {graphQuery.isError ? (
+        <ErrorMessage
+          message={getApiErrorMessage(graphQuery.error)}
+          className="mb-3"
+        />
+      ) : null}
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border bg-white p-2 shadow-sm">
         <div className="relative min-w-52 flex-1">
           <Search
@@ -270,9 +301,11 @@ export function GraphPage() {
       </div>
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border bg-[#f8f9fd] shadow-sm">
         <ReactFlow
-          nodes={graph.nodes}
-          edges={graph.edges}
+          nodes={nodes}
+          edges={edges}
           onInit={setInstance}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
           onNodeClick={(_event, node) => setSelectedId(node.id)}
           onPaneClick={() => setSelectedId(undefined)}
           fitView
@@ -303,6 +336,8 @@ export function GraphPage() {
         </div>
         <GraphInspector
           nodeId={selectedId}
+          categories={categories}
+          notes={notes}
           onClose={() => setSelectedId(undefined)}
           onSelect={setSelectedId}
         />

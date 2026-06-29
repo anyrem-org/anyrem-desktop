@@ -2,14 +2,18 @@ import { ExternalLink, FileText, Folder, Link2, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "../../../shared/components/ui/badge";
 import { Button } from "../../../shared/components/ui/button";
-import { categories, notes } from "../api/graph.api";
+import type { GraphCategory, GraphNote } from "../api/graph.api";
 
 export function GraphInspector({
   nodeId,
+  categories,
+  notes,
   onClose,
   onSelect,
 }: {
   nodeId?: string;
+  categories: GraphCategory[];
+  notes: GraphNote[];
   onClose: () => void;
   onSelect: (id: string) => void;
 }) {
