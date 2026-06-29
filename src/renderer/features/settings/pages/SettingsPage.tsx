@@ -1,5 +1,9 @@
 import { Bell, Database, Keyboard, Monitor, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AvatarPicker } from "../../avatars/components/AvatarPicker";
+import { useSelectAvatar } from "../../avatars/hooks/useAvatars";
+import type { AvatarOption } from "../../avatars/api/avatars.api";
+import { useAuthStore } from "../../auth/store/auth.store";
 import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { Button } from "../../../shared/components/ui/button";
 import {
@@ -71,6 +75,8 @@ export function SettingsPage() {
   const testTelegram = useTestTelegram();
   const removeTelegram = useRemoveTelegram();
   const setActivityOpen = useUiStore((state) => state.setActivityOpen);
+  const user = useAuthStore((state) => state.user);
+  const selectAvatar = useSelectAvatar();
   const data = settings.data;
   const [quickSearch, setQuickSearch] = useState(
     () => localStorage.getItem("quickSearchShortcut") ?? "Ctrl/Cmd+Alt+Space",
@@ -115,6 +121,28 @@ export function SettingsPage() {
       )}
       {data && (
         <div className="mt-7 space-y-5">
+          <Card>
+            <CardHeader>
+              <div>
+                <h3 className="m-0 text-base">Avatar</h3>
+                <p className="m-0 text-xs text-muted-foreground">
+                  Browse local DiceBear avatars by style.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <AvatarPicker
+                value={user?.avatarId}
+                initialStyle={user?.avatar?.style}
+                disabled={selectAvatar.isPending}
+                onChange={(avatar: AvatarOption) => selectAvatar.mutate(avatar.id)}
+              />
+              {selectAvatar.isPending ? (
+                <p className="text-xs text-muted-foreground">Saving avatar...</p>
+              ) : null}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex-row items-center gap-3 space-y-0">
               <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
@@ -448,12 +476,14 @@ export function SettingsPage() {
           </Card>
 
           {(update.isError ||
+            selectAvatar.isError ||
             configureTelegram.isError ||
             testTelegram.isError ||
             removeTelegram.isError) && (
             <ErrorMessage
               message={getApiErrorMessage(
                 update.error ??
+                  selectAvatar.error ??
                   configureTelegram.error ??
                   testTelegram.error ??
                   removeTelegram.error,

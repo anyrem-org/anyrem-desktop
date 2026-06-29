@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../features/auth/store/auth.store";
+import { avatarAssetUrl } from "../features/avatars/api/avatars.api";
 import { useLogout } from "../features/auth/hooks/useAuth";
 import {
   DropdownMenu,
@@ -81,12 +82,20 @@ export function TopHeader() {
               className="grid size-9 place-items-center rounded-full border-0 bg-slate-900 text-xs font-bold text-white"
               aria-label="Account menu"
             >
-              {user?.name
-                .split(" ")
-                .map((part) => part[0])
-                .slice(0, 2)
-                .join("")
-                .toUpperCase() ?? "U"}
+              {user?.avatar?.filePath ? (
+                <img
+                  src={avatarAssetUrl(user.avatar.filePath)}
+                  alt={user.name}
+                  className="size-9 rounded-full bg-white object-cover"
+                />
+              ) : (
+                user?.name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() ?? "U"
+              )}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

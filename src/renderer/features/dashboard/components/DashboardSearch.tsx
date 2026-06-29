@@ -2,13 +2,23 @@ import { Search, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../shared/components/ui/button";
+import { useAuthStore } from "../../auth/store/auth.store";
+import { avatarAssetUrl } from "../../avatars/api/avatars.api";
 import { useSearchHistory } from "../../search/hooks/useSearch";
 
 export function DashboardSearch() {
   const [query, setQuery] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const history = useSearchHistory(historyOpen);
+  const initials =
+    user?.name
+      .split(" ")
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() ?? "U";
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`);
@@ -18,7 +28,20 @@ export function DashboardSearch() {
       <div className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.18em] text-indigo-300">
         <Sparkles size={14} /> Memory Hub
       </div>
-      <h2 className="mb-2 text-3xl">Good morning, Anh.</h2>
+      <div className="mb-2 flex items-center gap-3">
+        <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full bg-white/10 text-sm font-bold text-white ring-1 ring-white/20">
+          {user?.avatar?.filePath ? (
+            <img
+              src={avatarAssetUrl(user.avatar.filePath)}
+              alt={user.name}
+              className="size-full bg-white object-cover"
+            />
+          ) : (
+            initials
+          )}
+        </span>
+        <h2 className="m-0 text-3xl">Good morning, {user?.name ?? "Anh"}.</h2>
+      </div>
       <p className="mt-0 text-sm text-slate-300">
         What do you want to remember or continue?
       </p>

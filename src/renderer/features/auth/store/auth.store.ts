@@ -7,6 +7,7 @@ type AuthState = {
   accessToken: string | null;
   status: AuthStatus;
   setSession: (user: AuthUser, accessToken: string) => void;
+  setUser: (user: AuthUser) => void;
   setAccessToken: (accessToken: string) => void;
   clearSession: () => void;
 };
@@ -42,6 +43,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     set(() => {
       writeStoredSession({ user, accessToken });
       return { user, accessToken, status: "authenticated" };
+    }),
+  setUser: (user) =>
+    set((state) => {
+      writeStoredSession({ user, accessToken: state.accessToken });
+      return { user };
     }),
   setAccessToken: (accessToken) =>
     set((state) => {
