@@ -18,6 +18,9 @@ export type SettingsData = {
     save_history: boolean;
     typo_tolerance: TypoTolerance;
   };
+  quick_access: {
+    shortcuts: Record<"search" | "create", string>;
+  };
   recap: {
     enabled: boolean;
     delivery_time: string;

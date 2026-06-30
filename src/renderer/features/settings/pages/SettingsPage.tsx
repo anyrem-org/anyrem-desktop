@@ -11,6 +11,13 @@ import {
   CardContent,
   CardHeader,
 } from "../../../shared/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../../shared/components/ui/dialog";
 import { Input } from "../../../shared/components/ui/input";
 import { Label } from "../../../shared/components/ui/label";
 import {
@@ -83,7 +90,15 @@ const keyNames: Record<string, string> = {
 const shortcutFromEvent = (event: React.KeyboardEvent) => {
   if (["Control", "Meta", "Alt", "Shift"].includes(event.key)) return null;
   if (!event.ctrlKey && !event.metaKey && !event.altKey) return null;
+  const codeKey = event.code === "Space"
+    ? "Space"
+    : /^Key[A-Z]$/.test(event.code)
+      ? event.code.slice(3)
+      : /^Digit[0-9]$/.test(event.code)
+        ? event.code.slice(5)
+        : null;
   const key =
+    codeKey ??
     keyNames[event.key] ??
     (event.key.length === 1 ? event.key.toUpperCase() : event.key);
   return [
@@ -112,6 +127,8 @@ export function SettingsPage() {
   const data = settings.data;
   const [shortcuts, setShortcuts] = useState(defaultShortcuts);
   const [shortcutError, setShortcutError] = useState("");
+  const [recordingShortcut, setRecordingShortcut] = useState<ShortcutName | null>(null);
+  const [pendingShortcut, setPendingShortcut] = useState("");
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
 
@@ -124,23 +141,53 @@ export function SettingsPage() {
     window.desktop?.getShortcuts().then(setShortcuts).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!data?.quick_access.shortcuts) return;
+    (async () => {
+      const search = await window.desktop?.setShortcut("search", data.quick_access.shortcuts.search);
+      const create = await window.desktop?.setShortcut("create", data.quick_access.shortcuts.create);
+      setShortcuts(create ?? search ?? { shortcuts: data.quick_access.shortcuts, registered: { search: false, create: false } });
+    })();
+  }, [data?.quick_access.shortcuts]);
+
   const save = (type: "appearance" | "search" | "recap", key: string, value: string | boolean) =>
     update.mutate([{ type, key, value }]);
 
-  const captureShortcut =
-    (name: ShortcutName) => async (event: React.KeyboardEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      const accelerator = shortcutFromEvent(event);
-      if (!accelerator) return;
-      const result = await window.desktop?.setShortcut(name, accelerator);
-      if (!result) return;
-      setShortcuts(result);
-      setShortcutError(result.ok ? "" : "Shortcut is already used by the system or another app.");
-    };
+  const saveShortcut = async (name: ShortcutName, accelerator: string) => {
+    const result = await window.desktop?.setShortcut(name, accelerator);
+    if (!result) return;
+    setShortcuts(result);
+    if (result.ok)
+      await update.mutateAsync([
+        { type: "quick_access", key: "shortcuts", value: result.shortcuts },
+      ]);
+    setShortcutError(result.ok ? "" : "Shortcut is already used by the system or another app.");
+    setRecordingShortcut(null);
+    setPendingShortcut("");
+  };
+
+  const captureShortcut = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    if (event.key === "Escape") {
+      setRecordingShortcut(null);
+      setPendingShortcut("");
+      return;
+    }
+    if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+      if (recordingShortcut && pendingShortcut) void saveShortcut(recordingShortcut, pendingShortcut);
+      return;
+    }
+    const accelerator = shortcutFromEvent(event);
+    if (accelerator) setPendingShortcut(accelerator);
+  };
 
   const resetShortcuts = async () => {
     const result = await window.desktop?.resetShortcuts();
     if (result) setShortcuts(result);
+    if (result)
+      await update.mutateAsync([
+        { type: "quick_access", key: "shortcuts", value: result.shortcuts },
+      ]);
     setShortcutError("");
   };
 
@@ -455,7 +502,8 @@ export function SettingsPage() {
                 </span>
                 <button
                   type="button"
-                  onKeyDown={captureShortcut("search")}
+                  aria-label="Change Quick Search shortcut"
+                  onClick={() => setRecordingShortcut("search")}
                   className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   {displayShortcut(shortcuts.shortcuts.search)}
@@ -470,7 +518,8 @@ export function SettingsPage() {
                 </span>
                 <button
                   type="button"
-                  onKeyDown={captureShortcut("create")}
+                  aria-label="Change Quick Create shortcut"
+                  onClick={() => setRecordingShortcut("create")}
                   className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   {displayShortcut(shortcuts.shortcuts.create)}
@@ -489,6 +538,31 @@ export function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+          <Dialog
+            open={Boolean(recordingShortcut)}
+            onOpenChange={(open) => {
+              if (!open) {
+                setRecordingShortcut(null);
+                setPendingShortcut("");
+              }
+            }}
+          >
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Change shortcut</DialogTitle>
+                <DialogDescription>
+                  Press desired key combination and then press Enter.
+                </DialogDescription>
+              </DialogHeader>
+              <Input
+                autoFocus
+                readOnly
+                value={pendingShortcut ? displayShortcut(pendingShortcut) : ""}
+                onKeyDown={captureShortcut}
+                className="h-11"
+              />
+            </DialogContent>
+          </Dialog>
 
           <Card>
             <CardHeader className="flex-row items-center gap-3 space-y-0">
