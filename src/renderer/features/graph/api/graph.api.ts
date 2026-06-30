@@ -13,6 +13,7 @@ export type GraphNote = {
   id: string;
   title: string;
   content: string;
+  contentHtml?: string;
   category: string;
   categoryColor: string;
   categoryIds: string[];

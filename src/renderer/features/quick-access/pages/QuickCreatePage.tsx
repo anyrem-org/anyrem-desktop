@@ -9,8 +9,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { AlignCenter, AlignLeft, AlignRight, Bold, Check, Code, Heading1, Heading2, Highlighter, Italic, Link2, List, ListOrdered, Plus, Quote, Redo2, Strikethrough, Table2, TableCellsMerge, TableCellsSplit, TableColumnsSplit, TableProperties, TableRowsSplit, Trash2, Underline as UnderlineIcon, Undo2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { AlignCenter, AlignLeft, AlignRight, Bold, Check, Code, Heading1, Heading2, Highlighter, Image as ImageIcon, Italic, Link2, List, ListOrdered, Plus, Quote, Redo2, Strikethrough, Table2, TableCellsMerge, TableCellsSplit, TableColumnsSplit, TableProperties, TableRowsSplit, Trash2, Underline as UnderlineIcon, Undo2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { MultiSelect } from '../../../shared/components/MultiSelect';
 import { ErrorMessage } from '../../../shared/components/ErrorMessage';
 import { Button } from '../../../shared/components/ui/button';
@@ -20,6 +20,8 @@ import { getApiErrorMessage } from '../../../shared/lib/api-client';
 import { cn } from '../../../shared/lib/utils';
 import { CategoryFormDialog } from '../../categories/components/CategoryFormDialog';
 import { useGetCategories } from '../../categories/hooks/useCategories';
+import { ImageNode } from '../../notes/editor/ImageNode';
+import { pasteImages } from '../../notes/editor/image-upload';
 import { useCreateNote, useGetNotes } from '../../notes/hooks/useNotes';
 
 type Tool = {
@@ -48,6 +50,7 @@ export function QuickCreatePage() {
     label: item.title,
     description: item.category,
   }));
+  const editorRef = useRef<Parameters<typeof pasteImages>[0] | null>(null);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -55,6 +58,7 @@ export function QuickCreatePage() {
       Highlight,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Link.configure({ openOnClick: false }),
+      ImageNode,
       Placeholder.configure({
         placeholder:
           'Start writing. Capture the useful part before it disappears…',
@@ -64,6 +68,16 @@ export function QuickCreatePage() {
       TableHeader,
       TableCell,
     ],
+    onCreate: ({ editor }) => {
+      editorRef.current = editor;
+    },
+    onDestroy: () => {
+      editorRef.current = null;
+    },
+    editorProps: {
+      handlePaste: (_view, event) =>
+        editorRef.current ? pasteImages(editorRef.current, event) : false,
+    },
   });
   const resetDraft = () => {
     setTitle('');
@@ -169,6 +183,12 @@ export function QuickCreatePage() {
           label: 'Link',
           active: () => editor.isActive('link'),
           run: setLink,
+        },
+        {
+          icon: ImageIcon,
+          label: 'Delete image',
+          active: () => editor.isActive('image'),
+          run: () => editor.chain().focus().deleteSelection().run(),
         },
         'divider',
         {

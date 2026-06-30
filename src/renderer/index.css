@@ -32,6 +32,8 @@ button { cursor: pointer; }
 .tiptap th, .tiptap td { border: 1px solid hsl(var(--border)); min-width: 140px; padding: .5rem .75rem; vertical-align: top; }
 .tiptap th { background: hsl(var(--muted)); font-weight: 600; }
 .tiptap th *, .tiptap td * { overflow-wrap: break-word; word-break: normal; }
+.tiptap img { display: block; max-width: 100%; height: auto; margin: 1rem 0; border-radius: .75rem; }
+.tiptap img.ProseMirror-selectednode { outline: 2px solid hsl(var(--primary)); outline-offset: 2px; }
 .tiptap p.is-editor-empty:first-child::before { color: #94a3b8; content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
 .quick-editor .tiptap { height: 100%; min-height: 0; overflow-y: auto; }
 .note-editor .tiptap { height: 100%; min-height: 0; overflow-y: auto; }

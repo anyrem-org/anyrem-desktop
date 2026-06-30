@@ -8,10 +8,9 @@ import { useSearchHistory } from "../../search/hooks/useSearch";
 
 export function DashboardSearch() {
   const [query, setQuery] = useState("");
-  const [historyOpen, setHistoryOpen] = useState(false);
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const history = useSearchHistory(historyOpen);
+  const history = useSearchHistory(true);
   const initials =
     user?.name
       .split(" ")
@@ -53,25 +52,24 @@ export function DashboardSearch() {
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          onFocus={() => setHistoryOpen(true)}
           className="h-11 min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-slate-900 outline-none"
           placeholder="Search notes, decisions, ideas..."
         />
         <Button>Search</Button>
       </form>
-      {historyOpen && (history.data?.length ?? 0) > 0 && (
+      {(history.data?.length ?? 0) > 0 && (
         <div className="mt-4 flex items-center gap-2">
           <span className="text-xs text-slate-500">Recent</span>
           {history.data?.slice(0, 3).map((item) => (
-          <button
-            key={item.id}
-            onClick={() =>
-              navigate(`/search?q=${encodeURIComponent(item.keyword)}`)
-            }
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
-          >
-            {item.keyword}
-          </button>
+            <button
+              key={item.id}
+              onClick={() =>
+                navigate(`/search?q=${encodeURIComponent(item.keyword)}`)
+              }
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
+            >
+              {item.keyword}
+            </button>
           ))}
         </div>
       )}

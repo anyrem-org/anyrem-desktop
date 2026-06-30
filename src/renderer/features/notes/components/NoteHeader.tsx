@@ -85,7 +85,11 @@ export function NoteHeader({
                 disabled={pinPending}
                 title={note.pinned ? "Unpin memory" : "Pin memory"}
               >
-                <Pin size={17} />
+                <Pin
+                  size={17}
+                  className={note.pinned ? "text-amber-500" : undefined}
+                  fill={note.pinned ? "currentColor" : "none"}
+                />
               </Button>
               <Button asChild className="rounded-xl px-4">
                 <Link to={`/notes/${note.id}/edit`} className="no-underline">

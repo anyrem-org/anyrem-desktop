@@ -51,6 +51,25 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      {/* {open && (
+        <p
+          className="mt-auto px-2 pt-4 text-[10px] leading-4 text-slate-400"
+          title="Made by @devnav2902, @thanhnm, @nhunnq"
+        >
+          Made by{" "}
+          <a className="font-medium text-slate-500" href="https://github.com/devnav2902" target="_blank" rel="noreferrer">
+            @devnav2902
+          </a>
+          ,{" "}
+          <a className="font-medium text-slate-500" href="https://github.com/thanhnm" target="_blank" rel="noreferrer">
+            @thanhnm
+          </a>
+          ,{" "}
+          <a className="font-medium text-slate-500" href="https://github.com/nhunnq" target="_blank" rel="noreferrer">
+            @nhunnq
+          </a>
+        </p>
+      )} */}
     </aside>
   );
 }

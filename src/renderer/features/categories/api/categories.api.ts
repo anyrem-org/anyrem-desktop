@@ -1,8 +1,8 @@
 import { apiClient } from "../../../shared/lib/api-client";
 import type { Paginated } from "../../../shared/types/api.types";
-import type { Category, CategoryDetail, CategoryIcon, CategoryNoteFilters, CategoryNoteSummary, CreateCategoryInput, UpdateCategoryInput } from "../types/category.types";
+import { categoryIconNames, type Category, type CategoryDetail, type CategoryIcon, type CategoryNoteFilters, type CategoryNoteSummary, type CreateCategoryInput, type UpdateCategoryInput } from "../types/category.types";
 
-const icons = new Set<CategoryIcon>(["Code2", "Search", "Lightbulb", "Bell", "FileText", "Folder"]);
+const icons = new Set<CategoryIcon>(categoryIconNames);
 type ApiCategory = { id: string; name: string; description: string | null; color: string; icon: string | null; _count?: { notes: number } };
 const mapCategory = (item: ApiCategory): Category => ({ id: item.id, name: item.name, description: item.description ?? "", color: item.color, icon: icons.has(item.icon as CategoryIcon) ? item.icon as CategoryIcon : "Folder", noteCount: item._count?.notes ?? 0 });
 

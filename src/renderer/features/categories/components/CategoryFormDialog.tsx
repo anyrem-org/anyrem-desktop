@@ -7,10 +7,10 @@ import { Input } from "../../../shared/components/ui/input";
 import { Label } from "../../../shared/components/ui/label";
 import { cn } from "../../../shared/lib/utils";
 import { useCreateCategory, useUpdateCategory } from "../hooks/useCategories";
-import type { Category, CategoryIcon as IconName } from "../types/category.types";
-import { CategoryIcon, categoryIconNames } from "./CategoryIcon";
+import { categoryIconNames, type Category, type CategoryIcon as IconName } from "../types/category.types";
+import { CategoryIcon } from "./CategoryIcon";
 
-const colors = ["#6366f1", "#0ea5e9", "#a855f7", "#f59e0b", "#10b981", "#ef4444"];
+const colors = ["#6366f1", "#0ea5e9", "#a855f7", "#f59e0b", "#10b981", "#ef4444", "#14b8a6", "#84cc16", "#eab308", "#f97316", "#ec4899", "#8b5cf6", "#06b6d4", "#22c55e", "#64748b", "#78716c", "#db2777", "#2563eb"];
 
 export function CategoryFormDialog({ trigger, category, onSaved }: { trigger: ReactNode; category?: Category; onSaved?: (category: Category) => void }) {
   const [open, setOpen] = useState(false);
@@ -43,8 +43,8 @@ export function CategoryFormDialog({ trigger, category, onSaved }: { trigger: Re
         <form onSubmit={submit} className="space-y-5">
           <div className="space-y-2"><Label htmlFor="category-name">Name</Label><Input id="category-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Architecture" autoFocus required maxLength={100} /></div>
           <div className="space-y-2"><Label htmlFor="category-description">Description</Label><Input id="category-description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What belongs here?" maxLength={500} /></div>
-          <div className="space-y-2"><Label>Optional icon</Label><div className="flex gap-2"><Button type="button" variant={!icon ? "default" : "outline"} onClick={() => setIcon(undefined)}>None</Button>{categoryIconNames.map((item) => <Button type="button" key={item} variant={icon === item ? "default" : "outline"} size="icon" onClick={() => setIcon(item)}><CategoryIcon name={item} size={17} /></Button>)}</div></div>
-          <div className="space-y-2"><Label>Color</Label><div className="flex gap-2">{colors.map((item) => <button type="button" key={item} onClick={() => setColor(item)} className={cn("size-8 rounded-full border-4 border-white shadow-sm ring-offset-2", color === item && "ring-2 ring-primary")} style={{ background: item }} aria-label={item} />)}</div></div>
+          <div className="space-y-2"><Label>Optional icon</Label><div className="flex flex-wrap gap-2"><Button type="button" variant={!icon ? "default" : "outline"} onClick={() => setIcon(undefined)}>None</Button>{categoryIconNames.map((item) => <Button type="button" key={item} variant={icon === item ? "default" : "outline"} size="icon" onClick={() => setIcon(item)}><CategoryIcon name={item} size={17} /></Button>)}</div></div>
+          <div className="space-y-2"><Label>Color</Label><div className="flex flex-wrap gap-2">{colors.map((item) => <button type="button" key={item} onClick={() => setColor(item)} className={cn("size-8 rounded-full border-4 border-white shadow-sm ring-offset-2", color === item && "ring-2 ring-primary")} style={{ background: item }} aria-label={item} />)}</div></div>
           {mutation.isError && <ErrorMessage message={getApiErrorMessage(mutation.error)} />}
           <Button className="w-full" disabled={mutation.isPending}>{mutation.isPending ? "Saving…" : category ? "Save changes" : "Create category"}</Button>
         </form>

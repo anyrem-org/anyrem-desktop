@@ -18,6 +18,7 @@ import {
   Heading1,
   Heading2,
   Highlighter,
+  Image as ImageIcon,
   Italic,
   Link2,
   List,
@@ -50,6 +51,8 @@ import { cn } from "../../../shared/lib/utils";
 import { useUiStore } from "../../../shared/store/ui.store";
 import { CategoryFormDialog } from "../../categories/components/CategoryFormDialog";
 import { useGetCategories } from "../../categories/hooks/useCategories";
+import { ImageNode } from "../editor/ImageNode";
+import { pasteImages } from "../editor/image-upload";
 import { useCreateNote, useGetNote, useGetNotes, useUpdateNote } from "../hooks/useNotes";
 
 type Tool = {
@@ -72,6 +75,7 @@ export function NoteEditorPage() {
   const create = useCreateNote();
   const update = useUpdateNote();
   const initialized = useRef(false);
+  const editorRef = useRef<Parameters<typeof pasteImages>[0] | null>(null);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -79,6 +83,7 @@ export function NoteEditorPage() {
       Highlight,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Link.configure({ openOnClick: false }),
+      ImageNode,
       Placeholder.configure({
         placeholder:
           "Start writing. Capture the useful part before it disappears…",
@@ -88,6 +93,16 @@ export function NoteEditorPage() {
       TableHeader,
       TableCell,
     ],
+    onCreate: ({ editor }) => {
+      editorRef.current = editor;
+    },
+    onDestroy: () => {
+      editorRef.current = null;
+    },
+    editorProps: {
+      handlePaste: (_view, event) =>
+        editorRef.current ? pasteImages(editorRef.current, event) : false,
+    },
   });
   useEffect(() => {
     if (!editor || !existing.data || initialized.current) return;
@@ -171,6 +186,12 @@ export function NoteEditorPage() {
           label: "Link",
           active: () => editor.isActive("link"),
           run: setLink,
+        },
+        {
+          icon: ImageIcon,
+          label: "Delete image",
+          active: () => editor.isActive("image"),
+          run: () => editor.chain().focus().deleteSelection().run(),
         },
         "divider",
         {

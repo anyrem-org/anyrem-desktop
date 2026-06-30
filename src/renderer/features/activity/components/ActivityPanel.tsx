@@ -1,4 +1,4 @@
-import { Clock3, Eye, FilePenLine, Sparkles } from "lucide-react";
+import { Eye, FilePenLine } from "lucide-react";
 import { useUiStore } from "../../../shared/store/ui.store";
 import { useRecentActivity } from "../hooks/useActivity";
 
@@ -47,17 +47,6 @@ export function ActivityPanel() {
         {!activity.isPending && !items.length && (
           <p className="text-xs text-slate-400">No activity yet.</p>
         )}
-      </div>
-      <hr className="my-6 border-slate-100" />
-      <h3 className="mb-3 flex items-center gap-2 text-sm">
-        <Sparkles size={16} className="text-amber-500" /> Today's activity
-      </h3>
-      <div className="rounded-2xl bg-slate-50 p-4">
-        <div className="flex items-end justify-between">
-          <strong className="text-3xl">{activity.data?.todayCount ?? 0}</strong>
-          <Clock3 size={18} className="text-slate-400" />
-        </div>
-        <p className="mb-0 text-xs text-slate-500">events recorded</p>
       </div>
     </aside>
   );

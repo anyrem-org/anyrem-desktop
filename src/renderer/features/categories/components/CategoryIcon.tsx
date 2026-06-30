@@ -1,8 +1,57 @@
-import { Bell, Code2, FileText, Folder, Lightbulb, Search } from "lucide-react";
-import type { CategoryIcon as IconName } from "../types/category.types";
+import {
+  Bell,
+  BookOpen,
+  Brain,
+  Briefcase,
+  CalendarDays,
+  Code2,
+  Database,
+  FileText,
+  Folder,
+  Heart,
+  Home,
+  Image,
+  Lightbulb,
+  MessageSquare,
+  Music,
+  Palette,
+  Rocket,
+  Search,
+  Shield,
+  Star,
+  Tag,
+  Target,
+  Wrench,
+  Zap,
+} from "lucide-react";
+import { categoryIconNames, type CategoryIcon as IconName } from "../types/category.types";
 
-const icons = { Bell, Code2, FileText, Folder, Lightbulb, Search };
-export const categoryIconNames = Object.keys(icons) as IconName[];
+const icons = {
+  Bell,
+  BookOpen,
+  Brain,
+  Briefcase,
+  CalendarDays,
+  Code2,
+  Database,
+  FileText,
+  Folder,
+  Heart,
+  Home,
+  Image,
+  Lightbulb,
+  MessageSquare,
+  Music,
+  Palette,
+  Rocket,
+  Search,
+  Shield,
+  Star,
+  Tag,
+  Target,
+  Wrench,
+  Zap,
+};
 export function CategoryIcon({
   name = "Folder",
   size = 20,

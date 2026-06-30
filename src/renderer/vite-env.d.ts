@@ -9,8 +9,17 @@ declare global {
     getRefreshToken: () => Promise<string | null>;
     setRefreshToken: (token: string) => Promise<void>;
     clearRefreshToken: () => Promise<void>;
+    getShortcuts: () => Promise<ShortcutPayload>;
+    setShortcut: (name: ShortcutName, accelerator: string) => Promise<ShortcutPayload & { ok: boolean }>;
+    resetShortcuts: () => Promise<ShortcutPayload>;
     onNavigate: (callback: (path: string) => void) => () => void;
   } }
 }
+
+type ShortcutName = "search" | "create";
+type ShortcutPayload = {
+  shortcuts: Record<ShortcutName, string>;
+  registered: Record<ShortcutName, boolean>;
+};
 
 export {};

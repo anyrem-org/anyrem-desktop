@@ -5,6 +5,7 @@ import {
   ipcMain,
   type Tray,
 } from "electron";
+import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { createQuickWindows } from "./quick-windows.js";
@@ -21,6 +22,56 @@ let tray: Tray | null = null;
 let quitting = false;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) app.quit();
+
+type ShortcutName = "search" | "create";
+type QuickShortcuts = Record<ShortcutName, string>;
+
+const defaultShortcuts: QuickShortcuts = {
+  search: "CommandOrControl+Alt+Space",
+  create: "CommandOrControl+Alt+N",
+};
+let quickShortcuts = defaultShortcuts;
+let shortcutHandlers: Record<ShortcutName, () => void>;
+let shortcutStatus: Record<ShortcutName, boolean> = {
+  search: false,
+  create: false,
+};
+
+const shortcutPath = () =>
+  path.join(app.getPath("userData"), "quick-shortcuts.json");
+
+const loadShortcuts = () => {
+  try {
+    quickShortcuts = {
+      ...defaultShortcuts,
+      ...JSON.parse(fs.readFileSync(shortcutPath(), "utf8")),
+    };
+  } catch {
+    quickShortcuts = defaultShortcuts;
+  }
+};
+
+const saveShortcuts = () =>
+  fs.writeFileSync(shortcutPath(), JSON.stringify(quickShortcuts, null, 2));
+
+const registerShortcut = (
+  name: ShortcutName,
+  accelerator = quickShortcuts[name],
+) => {
+  if (shortcutStatus[name]) globalShortcut.unregister(quickShortcuts[name]);
+  shortcutStatus[name] = globalShortcut.register(
+    accelerator,
+    shortcutHandlers[name],
+  );
+  if (shortcutStatus[name])
+    quickShortcuts = { ...quickShortcuts, [name]: accelerator };
+  return shortcutStatus[name];
+};
+
+const shortcutPayload = () => ({
+  shortcuts: quickShortcuts,
+  registered: shortcutStatus,
+});
 
 function createMainWindow() {
   const window = new BrowserWindow({
@@ -65,23 +116,17 @@ app.whenReady().then(() => {
     showCreate: quick.showCreate,
     quit: () => app.quit(),
   });
-  const searchShortcut = "CommandOrControl+Alt+Space";
-  const createShortcut = "CommandOrControl+Alt+N";
-  const searchRegistered = globalShortcut.register(
-    searchShortcut,
-    quick.showSearch,
-  );
-  const createRegistered = globalShortcut.register(
-    createShortcut,
-    quick.showCreate,
-  );
+  shortcutHandlers = { search: quick.showSearch, create: quick.showCreate };
+  loadShortcuts();
+  const searchRegistered = registerShortcut("search");
+  const createRegistered = registerShortcut("create");
   if (!searchRegistered)
     console.error(
-      "Quick Search shortcut unavailable: Ctrl/Cmd+Alt+Space is already registered.",
+      `Quick Search shortcut unavailable: ${quickShortcuts.search} is already registered.`,
     );
   if (!createRegistered)
     console.error(
-      "Quick Create shortcut unavailable: Ctrl/Cmd+Alt+N is already registered.",
+      `Quick Create shortcut unavailable: ${quickShortcuts.create} is already registered.`,
     );
   ipcMain.on("quick:close", (event) =>
     BrowserWindow.fromWebContents(event.sender)?.close(),
@@ -99,6 +144,28 @@ app.whenReady().then(() => {
     setRefreshToken(token),
   );
   ipcMain.handle("auth:refresh-token:clear", () => clearRefreshToken());
+  ipcMain.handle("shortcuts:get", () => shortcutPayload());
+  ipcMain.handle(
+    "shortcuts:set",
+    (_event, name: ShortcutName, accelerator: string) => {
+      const previous = quickShortcuts[name];
+      const ok = registerShortcut(name, accelerator);
+      if (ok) saveShortcuts();
+      else registerShortcut(name, previous);
+      return { ...shortcutPayload(), ok };
+    },
+  );
+  ipcMain.handle("shortcuts:reset", () => {
+    (Object.keys(quickShortcuts) as ShortcutName[]).forEach((name) => {
+      if (shortcutStatus[name]) globalShortcut.unregister(quickShortcuts[name]);
+      shortcutStatus[name] = false;
+    });
+    quickShortcuts = defaultShortcuts;
+    registerShortcut("search");
+    registerShortcut("create");
+    saveShortcuts();
+    return shortcutPayload();
+  });
   app.on("activate", () => {
     if (!mainWindow || mainWindow.isDestroyed())
       mainWindow = createMainWindow();

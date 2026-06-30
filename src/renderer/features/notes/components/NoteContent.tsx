@@ -10,6 +10,7 @@ type Props = {
   onWideTableChange: (hasWide: boolean) => void;
   inline?: boolean;
   fullContent?: boolean;
+  chrome?: boolean;
 };
 
 export function NoteContent({
@@ -21,6 +22,7 @@ export function NoteContent({
   onWideTableChange,
   inline = false,
   fullContent = false,
+  chrome = true,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -109,7 +111,7 @@ export function NoteContent({
   }, [activeIndex, html, onActiveIndexChange, onMatchCountChange, onWideTableChange, searchQuery]);
 
   const content = (
-    <article className="overflow-hidden rounded-3xl border bg-white p-10 shadow-sm">
+    <article className={chrome ? "overflow-hidden rounded-3xl border bg-white p-10 shadow-sm" : "overflow-hidden"}>
       <div
         ref={containerRef}
         className="note-preview tiptap max-w-full text-base leading-8 text-slate-600"

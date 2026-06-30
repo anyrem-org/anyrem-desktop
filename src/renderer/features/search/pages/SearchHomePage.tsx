@@ -75,7 +75,11 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
             onClick={() => pinNote.mutate({ id: note.id, pinned: !pinned })}
             disabled={pinNote.isPending}
           >
-            <Pin size={16} />
+            <Pin
+              size={16}
+              className={pinned ? "text-amber-500" : undefined}
+              fill={pinned ? "currentColor" : "none"}
+            />
           </Button>
         </div>
         <h2 className="mb-2 mt-6 text-2xl leading-tight">

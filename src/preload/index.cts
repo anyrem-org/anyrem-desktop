@@ -16,6 +16,10 @@ contextBridge.exposeInMainWorld("desktop", {
     ipcRenderer.invoke("auth:refresh-token:set", token),
   clearRefreshToken: (): Promise<void> =>
     ipcRenderer.invoke("auth:refresh-token:clear"),
+  getShortcuts: () => ipcRenderer.invoke("shortcuts:get"),
+  setShortcut: (name: "search" | "create", accelerator: string) =>
+    ipcRenderer.invoke("shortcuts:set", name, accelerator),
+  resetShortcuts: () => ipcRenderer.invoke("shortcuts:reset"),
   onNavigate: (callback: (path: string) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, path: string) =>
       callback(path);

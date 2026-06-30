@@ -55,17 +55,49 @@ function SettingRow({
   );
 }
 
-const shortcutKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
-  if (event.key === "Escape") return "";
+type ShortcutName = "search" | "create";
+type ShortcutPayload = {
+  shortcuts: Record<ShortcutName, string>;
+  registered: Record<ShortcutName, boolean>;
+};
+
+const defaultShortcuts: ShortcutPayload = {
+  shortcuts: {
+    search: "CommandOrControl+Alt+Space",
+    create: "CommandOrControl+Alt+N",
+  },
+  registered: { search: true, create: true },
+};
+
+const keyNames: Record<string, string> = {
+  " ": "Space",
+  ArrowUp: "Up",
+  ArrowDown: "Down",
+  ArrowLeft: "Left",
+  ArrowRight: "Right",
+  Enter: "Return",
+  Escape: "Esc",
+  "+": "Plus",
+};
+
+const shortcutFromEvent = (event: React.KeyboardEvent) => {
   if (["Control", "Meta", "Alt", "Shift"].includes(event.key)) return null;
-  const keys = [
-    event.ctrlKey || event.metaKey ? "Ctrl/Cmd" : undefined,
+  if (!event.ctrlKey && !event.metaKey && !event.altKey) return null;
+  const key =
+    keyNames[event.key] ??
+    (event.key.length === 1 ? event.key.toUpperCase() : event.key);
+  return [
+    event.ctrlKey || event.metaKey ? "CommandOrControl" : undefined,
     event.altKey ? "Alt" : undefined,
     event.shiftKey ? "Shift" : undefined,
-    event.key.length === 1 ? event.key.toUpperCase() : event.key,
-  ].filter(Boolean);
-  return keys.length > 1 ? keys.join("+") : null;
+    key,
+  ]
+    .filter(Boolean)
+    .join("+");
 };
+
+const displayShortcut = (accelerator: string) =>
+  accelerator.replace("CommandOrControl", "Ctrl/Cmd").replaceAll("+", " + ");
 
 export function SettingsPage() {
   const settings = useSettings();
@@ -78,12 +110,8 @@ export function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const selectAvatar = useSelectAvatar();
   const data = settings.data;
-  const [quickSearch, setQuickSearch] = useState(
-    () => localStorage.getItem("quickSearchShortcut") ?? "Ctrl/Cmd+Alt+Space",
-  );
-  const [quickCreate, setQuickCreate] = useState(
-    () => localStorage.getItem("quickCreateShortcut") ?? "Ctrl/Cmd+Alt+N",
-  );
+  const [shortcuts, setShortcuts] = useState(defaultShortcuts);
+  const [shortcutError, setShortcutError] = useState("");
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
 
@@ -92,17 +120,29 @@ export function SettingsPage() {
     setActivityOpen(data.appearance.show_activity_panel);
   }, [data, setActivityOpen]);
 
+  useEffect(() => {
+    window.desktop?.getShortcuts().then(setShortcuts).catch(() => {});
+  }, []);
+
   const save = (type: "appearance" | "search" | "recap", key: string, value: string | boolean) =>
     update.mutate([{ type, key, value }]);
+
   const captureShortcut =
-    (setValue: (value: string) => void, storageKey: string) =>
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
+    (name: ShortcutName) => async (event: React.KeyboardEvent<HTMLButtonElement>) => {
       event.preventDefault();
-      const value = shortcutKey(event);
-      if (value === null) return;
-      setValue(value);
-      localStorage.setItem(storageKey, value);
+      const accelerator = shortcutFromEvent(event);
+      if (!accelerator) return;
+      const result = await window.desktop?.setShortcut(name, accelerator);
+      if (!result) return;
+      setShortcuts(result);
+      setShortcutError(result.ok ? "" : "Shortcut is already used by the system or another app.");
     };
+
+  const resetShortcuts = async () => {
+    const result = await window.desktop?.resetShortcuts();
+    if (result) setShortcuts(result);
+    setShortcutError("");
+  };
 
   return (
     <div className="mx-auto max-w-7xl p-8">
@@ -407,36 +447,45 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between rounded-xl bg-muted/60 p-3">
-                <span className="text-sm">Quick Search</span>
-                <Input
-                  value={quickSearch}
-                  readOnly
-                  placeholder="Press shortcut"
-                  onKeyDown={captureShortcut(
-                    setQuickSearch,
-                    "quickSearchShortcut",
-                  )}
-                  onBlur={() =>
-                    localStorage.setItem("quickSearchShortcut", quickSearch)
-                  }
-                  className="h-8 w-48 text-xs"
-                />
+                <span>
+                  <span className="block text-sm">Quick Search</span>
+                  <span className="text-xs text-muted-foreground">
+                    Click shortcut, then press new keys.
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onKeyDown={captureShortcut("search")}
+                  className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {displayShortcut(shortcuts.shortcuts.search)}
+                </button>
               </div>
               <div className="flex items-center justify-between rounded-xl bg-muted/60 p-3">
-                <span className="text-sm">Quick Create</span>
-                <Input
-                  value={quickCreate}
-                  readOnly
-                  placeholder="Press shortcut"
-                  onKeyDown={captureShortcut(
-                    setQuickCreate,
-                    "quickCreateShortcut",
-                  )}
-                  onBlur={() =>
-                    localStorage.setItem("quickCreateShortcut", quickCreate)
-                  }
-                  className="h-8 w-48 text-xs"
-                />
+                <span>
+                  <span className="block text-sm">Quick Create</span>
+                  <span className="text-xs text-muted-foreground">
+                    Click shortcut, then press new keys.
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onKeyDown={captureShortcut("create")}
+                  className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {displayShortcut(shortcuts.shortcuts.create)}
+                </button>
+              </div>
+              {!!shortcutError && (
+                <p className="m-0 text-xs text-destructive">{shortcutError}</p>
+              )}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  Use Ctrl/Cmd or Alt with another key. If a combo fails, it is taken by OS.
+                </span>
+                <Button type="button" variant="ghost" size="sm" onClick={resetShortcuts}>
+                  Reset
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -2,6 +2,7 @@ import { ExternalLink, FileText, Folder, Link2, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "../../../shared/components/ui/badge";
 import { Button } from "../../../shared/components/ui/button";
+import { NoteContent } from "../../notes/components/NoteContent";
 import type { GraphCategory, GraphNote } from "../api/graph.api";
 
 export function GraphInspector({
@@ -131,7 +132,22 @@ export function GraphInspector({
             </button>
           ))}
         </div>
-        <p className="mt-5 text-sm leading-6 text-slate-600">{note.content}</p>
+        <div className="mt-5">
+          {note.contentHtml ? (
+            <NoteContent
+              html={note.contentHtml}
+              searchQuery=""
+              activeIndex={0}
+              onMatchCountChange={() => {}}
+              onActiveIndexChange={() => {}}
+              onWideTableChange={() => {}}
+              inline
+              chrome={false}
+            />
+          ) : (
+            <p className="text-sm leading-6 text-slate-600">{note.content}</p>
+          )}
+        </div>
         <div className="my-5 h-px bg-border" />
         <h4 className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
           <Link2 size={13} /> Related memories

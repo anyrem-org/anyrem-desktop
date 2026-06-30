@@ -1,4 +1,5 @@
-export type CategoryIcon = "Code2" | "Search" | "Lightbulb" | "Bell" | "FileText" | "Folder";
+export const categoryIconNames = ["Bell", "BookOpen", "Brain", "Briefcase", "CalendarDays", "Code2", "Database", "FileText", "Folder", "Heart", "Home", "Image", "Lightbulb", "MessageSquare", "Music", "Palette", "Rocket", "Search", "Shield", "Star", "Tag", "Target", "Wrench", "Zap"] as const;
+export type CategoryIcon = (typeof categoryIconNames)[number];
 export type Category = { id: string; name: string; description: string; color: string; icon: CategoryIcon; noteCount: number };
 export type CategoryNoteSummary = { id: string; title: string; contentText: string; pinned: boolean; updatedAt: string };
 export type CategoryDetail = Category;

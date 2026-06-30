@@ -5,6 +5,7 @@ export type Note = {
   categoryColor: string;
   categoryIds: string[];
   content: string;
+  contentHtml?: string;
   relatedIds: string[];
   updatedAt: string;
   pinned?: boolean;

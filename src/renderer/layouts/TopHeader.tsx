@@ -55,15 +55,6 @@ export function TopHeader() {
       </div>
       <div className="ml-auto flex items-center gap-2">
         <Link
-          to="/search"
-          className="hidden items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-400 no-underline lg:flex"
-        >
-          <Search size={16} /> Search everything{" "}
-          <kbd className="ml-6 rounded bg-slate-100 px-1.5 py-0.5 text-[10px]">
-            ⌘ K
-          </kbd>
-        </Link>
-        <Link
           to="/notes/new"
           className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground no-underline shadow-sm"
         >
@@ -89,12 +80,12 @@ export function TopHeader() {
                   className="size-9 rounded-full bg-white object-cover"
                 />
               ) : (
-                user?.name
+                (user?.name
                   .split(" ")
                   .map((part) => part[0])
                   .slice(0, 2)
                   .join("")
-                  .toUpperCase() ?? "U"
+                  .toUpperCase() ?? "U")
               )}
             </button>
           </DropdownMenuTrigger>
@@ -112,7 +103,9 @@ export function TopHeader() {
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onSelect={() => {
-                logout.mutate(undefined, { onSettled: () => navigate("/login", { replace: true }) });
+                logout.mutate(undefined, {
+                  onSettled: () => navigate("/login", { replace: true }),
+                });
               }}
             >
               <LogOut size={15} /> Log out

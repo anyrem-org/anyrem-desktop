@@ -19,12 +19,10 @@ export function createTray(actions: {
       { type: "separator" },
       {
         label: "Quick Search",
-        accelerator: "CommandOrControl+Space",
         click: actions.showSearch,
       },
       {
         label: "Quick Create",
-        accelerator: "CommandOrControl+Shift+N",
         click: actions.showCreate,
       },
       { type: "separator" },
