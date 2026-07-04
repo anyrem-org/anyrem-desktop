@@ -23,6 +23,16 @@ let quitting = false;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) app.quit();
 
+// On Wayland, global shortcuts only work through the XDG GlobalShortcuts portal
+// and the native Wayland backend. Under XWayland (X11), GNOME refuses global key
+// grabs, so register() always fails. See electron/electron#51875.
+if (process.platform === "linux") {
+  app.commandLine.appendSwitch("enable-features", "GlobalShortcutsPortal");
+  if (process.env.WAYLAND_DISPLAY)
+    app.commandLine.appendSwitch("ozone-platform", "wayland");
+  app.setName("anyrem-desktop");
+}
+
 type ShortcutName = "search" | "create";
 type QuickShortcuts = Record<ShortcutName, string>;
 
@@ -59,13 +69,19 @@ const registerShortcut = (
   accelerator = quickShortcuts[name],
 ) => {
   if (shortcutStatus[name]) globalShortcut.unregister(quickShortcuts[name]);
-  shortcutStatus[name] = globalShortcut.register(
-    accelerator,
-    shortcutHandlers[name],
-  );
-  if (shortcutStatus[name])
-    quickShortcuts = { ...quickShortcuts, [name]: accelerator };
-  return shortcutStatus[name];
+  let registered = false;
+  try {
+    registered = globalShortcut.register(accelerator, shortcutHandlers[name]);
+    // On Wayland the portal may bind asynchronously and return false on the
+    // first call; isRegistered() reflects the actual state more reliably.
+    if (!registered) registered = globalShortcut.isRegistered(accelerator);
+  } catch (error) {
+    console.error(`Failed to register ${accelerator}:`, error);
+    registered = false;
+  }
+  shortcutStatus[name] = registered;
+  if (registered) quickShortcuts = { ...quickShortcuts, [name]: accelerator };
+  return registered;
 };
 
 const shortcutPayload = () => ({
@@ -120,14 +136,9 @@ app.whenReady().then(() => {
   loadShortcuts();
   const searchRegistered = registerShortcut("search");
   const createRegistered = registerShortcut("create");
-  if (!searchRegistered)
-    console.error(
-      `Quick Search shortcut unavailable: ${quickShortcuts.search} is already registered.`,
-    );
-  if (!createRegistered)
-    console.error(
-      `Quick Create shortcut unavailable: ${quickShortcuts.create} is already registered.`,
-    );
+  console.log(
+    `[shortcuts] search=${searchRegistered} (${quickShortcuts.search}) create=${createRegistered} (${quickShortcuts.create})`,
+  );
   ipcMain.on("quick:close", (event) =>
     BrowserWindow.fromWebContents(event.sender)?.close(),
   );
@@ -150,9 +161,21 @@ app.whenReady().then(() => {
     (_event, name: ShortcutName, accelerator: string) => {
       const previous = quickShortcuts[name];
       const ok = registerShortcut(name, accelerator);
-      if (ok) saveShortcuts();
-      else registerShortcut(name, previous);
-      return { ...shortcutPayload(), ok };
+      if (ok) {
+        saveShortcuts();
+        return { ...shortcutPayload(), ok: true, pending: false };
+      }
+      // Wayland's portal may confirm the binding asynchronously, so a false
+      // result isn't a reliable "already used" signal. Persist the choice and
+      // let the UI show a soft note instead of an error.
+      if (process.platform === "linux") {
+        quickShortcuts = { ...quickShortcuts, [name]: accelerator };
+        saveShortcuts();
+        return { ...shortcutPayload(), ok: true, pending: true };
+      }
+      // Windows/macOS: the combo is genuinely taken; roll back.
+      registerShortcut(name, previous);
+      return { ...shortcutPayload(), ok: false, pending: false };
     },
   );
   ipcMain.handle("shortcuts:reset", () => {

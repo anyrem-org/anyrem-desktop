@@ -76,43 +76,112 @@ const defaultShortcuts: ShortcutPayload = {
   registered: { search: true, create: true },
 };
 
-const keyNames: Record<string, string> = {
-  " ": "Space",
-  ArrowUp: "Up",
-  ArrowDown: "Down",
-  ArrowLeft: "Left",
-  ArrowRight: "Right",
-  Enter: "Return",
-  Escape: "Esc",
-  "+": "Plus",
+const platform = () =>
+  (window.desktop?.platform ?? navigator.platform).toLowerCase();
+const isMac = () => platform().includes("mac");
+const isLinux = () => platform().includes("linux");
+
+// Map a KeyboardEvent.code to an Electron accelerator key token.
+// Using `code` (physical key) avoids layout/locale issues from `event.key`.
+const codeToAcceleratorKey = (code: string): string | null => {
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+  if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+  if (/^Numpad[0-9]$/.test(code)) return `num${code.slice(6)}`;
+  if (/^F[0-9]{1,2}$/.test(code)) return code;
+  const named: Record<string, string> = {
+    Space: "Space",
+    Enter: "Return",
+    NumpadEnter: "Return",
+    Tab: "Tab",
+    Backspace: "Backspace",
+    Delete: "Delete",
+    Insert: "Insert",
+    Home: "Home",
+    End: "End",
+    PageUp: "PageUp",
+    PageDown: "PageDown",
+    ArrowUp: "Up",
+    ArrowDown: "Down",
+    ArrowLeft: "Left",
+    ArrowRight: "Right",
+    Minus: "-",
+    Equal: "=",
+    BracketLeft: "[",
+    BracketRight: "]",
+    Backslash: "\\",
+    Semicolon: ";",
+    Quote: "'",
+    Comma: ",",
+    Period: ".",
+    Slash: "/",
+    Backquote: "`",
+  };
+  return named[code] ?? null;
 };
 
-const shortcutFromEvent = (event: React.KeyboardEvent) => {
-  if (["Control", "Meta", "Alt", "Shift"].includes(event.key)) return null;
-  if (!event.ctrlKey && !event.metaKey && !event.altKey) return null;
-  const codeKey = event.code === "Space"
-    ? "Space"
-    : /^Key[A-Z]$/.test(event.code)
-      ? event.code.slice(3)
-      : /^Digit[0-9]$/.test(event.code)
-        ? event.code.slice(5)
-        : null;
-  const key =
-    codeKey ??
-    keyNames[event.key] ??
-    (event.key.length === 1 ? event.key.toUpperCase() : event.key);
-  return [
-    event.ctrlKey || event.metaKey ? "CommandOrControl" : undefined,
-    event.altKey ? "Alt" : undefined,
-    event.shiftKey ? "Shift" : undefined,
-    key,
-  ]
-    .filter(Boolean)
-    .join("+");
+type Modifiers = { ctrl: boolean; alt: boolean; shift: boolean; meta: boolean };
+
+// Modifier tokens in a stable order. meta -> Command (mac) / Super (Win/Linux).
+const modifierTokens = (mods: Modifiers): string[] => {
+  const tokens: string[] = [];
+  if (mods.meta) tokens.push(isMac() ? "Command" : "Super");
+  if (mods.ctrl) tokens.push("Control");
+  if (mods.alt) tokens.push("Alt");
+  if (mods.shift) tokens.push("Shift");
+  return tokens;
 };
 
-const displayShortcut = (accelerator: string) =>
-  accelerator.replace("CommandOrControl", "Ctrl/Cmd").replaceAll("+", " + ");
+// A primary modifier (Ctrl/Alt/Cmd/Super) is required; Shift alone is invalid.
+const buildAccelerator = (mods: Modifiers, key: string | null): string | null => {
+  if (!key || !(mods.ctrl || mods.alt || mods.meta)) return null;
+  return [...modifierTokens(mods), key].join("+");
+};
+
+const modifierLabel = (token: string): string => {
+  const mac = isMac();
+  switch (token) {
+    case "CommandOrControl": // legacy stored value
+      return mac ? "\u2318" : "Ctrl";
+    case "Command":
+      return mac ? "\u2318" : "Cmd";
+    case "Super":
+      return mac ? "\u2318" : "Super";
+    case "Control":
+      return mac ? "\u2303" : "Ctrl";
+    case "Alt":
+      return mac ? "\u2325" : "Alt";
+    case "Shift":
+      return mac ? "\u21e7" : "Shift";
+    default:
+      return token;
+  }
+};
+
+const displayShortcut = (accelerator: string): string =>
+  accelerator
+    .split("+")
+    .map(modifierLabel)
+    .join(isMac() ? " " : " + ");
+
+function ShortcutStatus({ active }: { active: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[11px] ${active ? "text-emerald-600" : "text-amber-600"}`}
+      title={
+        active
+          ? "This shortcut is active and works in the background."
+          : isLinux()
+            ? "Not active in the background. Linux/Wayland restricts global shortcuts; it still works while the app is focused."
+            : "Saved, but not active. The combo may be in use by another app."
+      }
+    >
+      <span
+        className={`size-1.5 rounded-full ${active ? "bg-emerald-500" : "bg-amber-500"}`}
+      />
+      {active ? "Active" : "Not active"}
+    </span>
+  );
+}
 
 export function SettingsPage() {
   const settings = useSettings();
@@ -127,8 +196,11 @@ export function SettingsPage() {
   const data = settings.data;
   const [shortcuts, setShortcuts] = useState(defaultShortcuts);
   const [shortcutError, setShortcutError] = useState("");
+  const [shortcutNotice, setShortcutNotice] = useState("");
   const [recordingShortcut, setRecordingShortcut] = useState<ShortcutName | null>(null);
   const [pendingShortcut, setPendingShortcut] = useState("");
+  const [livePreview, setLivePreview] = useState("");
+  const [saving, setSaving] = useState(false);
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
 
@@ -153,32 +225,123 @@ export function SettingsPage() {
   const save = (type: "appearance" | "search" | "recap", key: string, value: string | boolean) =>
     update.mutate([{ type, key, value }]);
 
-  const saveShortcut = async (name: ShortcutName, accelerator: string) => {
-    const result = await window.desktop?.setShortcut(name, accelerator);
-    if (!result) return;
-    setShortcuts(result);
-    if (result.ok)
-      await update.mutateAsync([
-        { type: "quick_access", key: "shortcuts", value: result.shortcuts },
-      ]);
-    setShortcutError(result.ok ? "" : "Shortcut is already used by the system or another app.");
-    setRecordingShortcut(null);
+  const openRecorder = (name: ShortcutName) => {
+    setShortcutError("");
+    setShortcutNotice("");
     setPendingShortcut("");
+    setLivePreview("");
+    setRecordingShortcut(name);
   };
 
-  const captureShortcut = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const closeRecorder = () => {
+    setRecordingShortcut(null);
+    setPendingShortcut("");
+    setLivePreview("");
+  };
+
+  const saveShortcut = async (name: ShortcutName, accelerator: string) => {
+    setSaving(true);
+    try {
+      const result = await window.desktop?.setShortcut(name, accelerator);
+      if (!result) {
+        setShortcutError("Shortcuts are only available in the desktop app.");
+        return;
+      }
+      setShortcuts(result);
+      if (result.ok) {
+        await update.mutateAsync([
+          { type: "quick_access", key: "shortcuts", value: result.shortcuts },
+        ]);
+        // Wayland: saved, but the OS portal may confirm the binding later
+        // (and can ask you to approve it). Show a soft note, not an error.
+        // On Linux/Wayland, register() reports the real state. If it didn't bind,
+        // it's usually the known Wayland limitation, not a bad shortcut.
+        setShortcutNotice(
+          result.pending && !result.registered[name]
+            ? "Saved, but Linux/Wayland doesn't let apps register global shortcuts here, so it won't trigger in the background. It works while the app window is focused."
+            : "",
+        );
+        closeRecorder();
+      } else {
+        const superHint = accelerator.includes("Super")
+          ? " The Super/Windows key is often reserved by the desktop; try Ctrl or Alt instead."
+          : "";
+        setShortcutError(
+          `${displayShortcut(accelerator)} is already used by the system or another app.${superHint} Try a different combination.`,
+        );
+        setPendingShortcut("");
+        setLivePreview("");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const captureShortcut = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Tab") return; // allow focus to leave the field
     event.preventDefault();
+
     if (event.key === "Escape") {
-      setRecordingShortcut(null);
+      closeRecorder();
+      return;
+    }
+
+    // Plain Enter confirms the captured combo (like clicking Save).
+    if (
+      event.key === "Enter" &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      !event.shiftKey &&
+      pendingShortcut &&
+      recordingShortcut
+    ) {
+      void saveShortcut(recordingShortcut, pendingShortcut);
+      return;
+    }
+
+    // Super/Windows key is reported inconsistently on Ubuntu/GNOME (metaKey may
+    // be unset), so also detect it from the physical code.
+    const metaByCode = /^(Meta|OS)(Left|Right)$/.test(event.code);
+    const mods: Modifiers = {
+      ctrl: event.ctrlKey,
+      alt: event.altKey,
+      shift: event.shiftKey,
+      meta: event.metaKey || metaByCode,
+    };
+    const isModifierKey =
+      ["Control", "Meta", "Alt", "Shift", "OS", "Super"].includes(event.key) ||
+      metaByCode;
+    const baseKey = isModifierKey ? null : codeToAcceleratorKey(event.code);
+
+    // Live preview (works with modifiers only). A single keydown carries one
+    // non-modifier key, so a valid combo arrives complete in one event.
+    setLivePreview(
+      [...modifierTokens(mods), ...(baseKey ? [baseKey] : [])]
+        .map(modifierLabel)
+        .join(isMac() ? " " : " + "),
+    );
+
+    if (isModifierKey || !baseKey) return; // wait for a real key
+
+    const accelerator = buildAccelerator(mods, baseKey);
+    if (!accelerator) {
+      setShortcutError(
+        `Hold ${isMac() ? "\u2318 Cmd, \u2325 Option," : "Ctrl, Alt,"} or Super together with the key. Shift alone isn't enough.`,
+      );
       setPendingShortcut("");
       return;
     }
-    if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
-      if (recordingShortcut && pendingShortcut) void saveShortcut(recordingShortcut, pendingShortcut);
-      return;
-    }
-    const accelerator = shortcutFromEvent(event);
-    if (accelerator) setPendingShortcut(accelerator);
+    setShortcutError("");
+    setPendingShortcut(accelerator);
+    // Don't auto-save; wait for the user to confirm with the Save button.
+  };
+
+  const clearLiveOnRelease = (event: React.KeyboardEvent<HTMLElement>) => {
+    // If a full combo isn't captured yet and user releases all modifiers, reset preview.
+    if (pendingShortcut) return;
+    if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey)
+      setLivePreview("");
   };
 
   const resetShortcuts = async () => {
@@ -497,43 +660,55 @@ export function SettingsPage() {
                 <span>
                   <span className="block text-sm">Quick Search</span>
                   <span className="text-xs text-muted-foreground">
-                    Click shortcut, then press new keys.
+                    Click to change, then press the new keys.
                   </span>
                 </span>
-                <button
-                  type="button"
-                  aria-label="Change Quick Search shortcut"
-                  onClick={() => setRecordingShortcut("search")}
-                  className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {displayShortcut(shortcuts.shortcuts.search)}
-                </button>
+                <span className="flex items-center gap-3">
+                  <ShortcutStatus active={shortcuts.registered.search} />
+                  <button
+                    type="button"
+                    aria-label="Change Quick Search shortcut"
+                    onClick={() => openRecorder("search")}
+                    className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {displayShortcut(shortcuts.shortcuts.search)}
+                  </button>
+                </span>
               </div>
               <div className="flex items-center justify-between rounded-xl bg-muted/60 p-3">
                 <span>
                   <span className="block text-sm">Quick Create</span>
                   <span className="text-xs text-muted-foreground">
-                    Click shortcut, then press new keys.
+                    Click to change, then press the new keys.
                   </span>
                 </span>
-                <button
-                  type="button"
-                  aria-label="Change Quick Create shortcut"
-                  onClick={() => setRecordingShortcut("create")}
-                  className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {displayShortcut(shortcuts.shortcuts.create)}
-                </button>
+                <span className="flex items-center gap-3">
+                  <ShortcutStatus active={shortcuts.registered.create} />
+                  <button
+                    type="button"
+                    aria-label="Change Quick Create shortcut"
+                    onClick={() => openRecorder("create")}
+                    className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {displayShortcut(shortcuts.shortcuts.create)}
+                  </button>
+                </span>
               </div>
               {!!shortcutError && (
                 <p className="m-0 text-xs text-destructive">{shortcutError}</p>
               )}
+              {!!shortcutNotice && (
+                <p className="m-0 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  {shortcutNotice}
+                </p>
+              )}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  Use Ctrl/Cmd or Alt with another key. If a combo fails, it is taken by OS.
+                  Combine {isMac() ? "\u2318 Cmd, \u2325 Option," : "Ctrl, Alt,"} or Shift with one other key.
+                  Some combos may be reserved by the OS.
                 </span>
                 <Button type="button" variant="ghost" size="sm" onClick={resetShortcuts}>
-                  Reset
+                  Reset to defaults
                 </Button>
               </div>
             </CardContent>
@@ -541,26 +716,83 @@ export function SettingsPage() {
           <Dialog
             open={Boolean(recordingShortcut)}
             onOpenChange={(open) => {
-              if (!open) {
-                setRecordingShortcut(null);
-                setPendingShortcut("");
-              }
+              if (!open) closeRecorder();
             }}
           >
-            <DialogContent className="max-w-xl">
+            <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Change shortcut</DialogTitle>
+                <DialogTitle>
+                  {recordingShortcut === "create"
+                    ? "Quick Create shortcut"
+                    : "Quick Search shortcut"}
+                </DialogTitle>
                 <DialogDescription>
-                  Press desired key combination and then press Enter.
+                  Press the keys you want, then click Save. Esc cancels.
                 </DialogDescription>
               </DialogHeader>
-              <Input
+
+              <button
+                type="button"
                 autoFocus
-                readOnly
-                value={pendingShortcut ? displayShortcut(pendingShortcut) : ""}
                 onKeyDown={captureShortcut}
-                className="h-11"
-              />
+                onKeyUp={clearLiveOnRelease}
+                onBlur={() => !pendingShortcut && setLivePreview("")}
+                className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-muted/40 text-center outline-none transition-colors focus:border-primary focus:bg-accent/40"
+              >
+                {saving ? (
+                  <span className="text-sm text-muted-foreground">Saving...</span>
+                ) : pendingShortcut ? (
+                  <span className="text-2xl font-medium tracking-wide">
+                    {displayShortcut(pendingShortcut)}
+                  </span>
+                ) : livePreview ? (
+                  <span className="text-2xl font-medium tracking-wide text-muted-foreground">
+                    {livePreview}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-sm text-muted-foreground">
+                      Press keys now
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      e.g. {isMac() ? "\u2318 \u2325 Space" : "Ctrl + Alt + Space"}
+                    </span>
+                  </>
+                )}
+              </button>
+
+              {!!shortcutError && (
+                <p className="m-0 text-center text-xs text-destructive">
+                  {shortcutError}
+                </p>
+              )}
+              <p className="m-0 text-center text-xs text-muted-foreground">
+                {pendingShortcut
+                  ? "Press Save to apply, or press new keys to change it."
+                  : "Hold your modifiers and press a key."}
+              </p>
+
+              <div className="mt-2 flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeRecorder}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() =>
+                    recordingShortcut &&
+                    pendingShortcut &&
+                    void saveShortcut(recordingShortcut, pendingShortcut)
+                  }
+                  disabled={saving || !pendingShortcut}
+                >
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
 

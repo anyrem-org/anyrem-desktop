@@ -10,7 +10,7 @@ declare global {
     setRefreshToken: (token: string) => Promise<void>;
     clearRefreshToken: () => Promise<void>;
     getShortcuts: () => Promise<ShortcutPayload>;
-    setShortcut: (name: ShortcutName, accelerator: string) => Promise<ShortcutPayload & { ok: boolean }>;
+    setShortcut: (name: ShortcutName, accelerator: string) => Promise<ShortcutPayload & { ok: boolean; pending?: boolean }>;
     resetShortcuts: () => Promise<ShortcutPayload>;
     onNavigate: (callback: (path: string) => void) => () => void;
   } }
