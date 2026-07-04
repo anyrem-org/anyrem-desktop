@@ -401,7 +401,7 @@ export function SettingsPage() {
               <div>
                 <h3 className="m-0 text-base">Search</h3>
                 <p className="m-0 text-xs text-muted-foreground">
-                  Recall behavior and history.
+                  How searching and recent-search history work.
                 </p>
               </div>
             </CardHeader>
@@ -430,7 +430,7 @@ export function SettingsPage() {
               </SettingRow>
               <SettingRow
                 title="Typo tolerance"
-                description="Allow light spelling mistakes in search."
+                description="How forgiving search is with misspelled words. Flexible finds more, Strict is exact."
               >
                 <Select
                   value={data.search.typo_tolerance}
@@ -459,14 +459,14 @@ export function SettingsPage() {
               <div>
                 <h3 className="m-0 text-base">Appearance</h3>
                 <p className="m-0 text-xs text-muted-foreground">
-                  Desktop layout preferences.
+                  Layout and color of the desktop app.
                 </p>
               </div>
             </CardHeader>
             <CardContent>
               <SettingRow
                 title="Recently active panel"
-                description="Show activity panel when app opens."
+                description="Open the side panel of recent activity when the app starts."
               >
                 <Switch
                   checked={data.appearance.show_activity_panel}
@@ -515,14 +515,14 @@ export function SettingsPage() {
               <div>
                 <h3 className="m-0 text-base">Daily recap</h3>
                 <p className="m-0 text-xs text-muted-foreground">
-                  Configure summary delivery.
+                  A daily summary of what you captured, sent to you automatically.
                 </p>
               </div>
             </CardHeader>
             <CardContent>
               <SettingRow
                 title="Enable daily recap"
-                description="Prepare a summary of memories captured today."
+                description="Turn the daily summary on or off."
               >
                 <Switch
                   checked={data.recap.enabled}
@@ -557,7 +557,7 @@ export function SettingsPage() {
               </SettingRow>
               <SettingRow
                 title="Telegram delivery"
-                description="Send daily recap to configured Telegram chat."
+                description="Send the recap to your Telegram chat. Set up Telegram below first."
               >
                 <Switch
                   checked={data.recap.telegram_enabled}
@@ -586,24 +586,49 @@ export function SettingsPage() {
                 <h3 className="m-0 text-base">Telegram</h3>
                 <p className="m-0 text-xs text-muted-foreground">
                   {data.telegram.configured
-                    ? `Configured ${data.telegram.maskedChatId ?? ""}`
-                    : "Connect a Telegram bot and chat."}
+                    ? `Connected to chat ${data.telegram.maskedChatId ?? ""}. Recaps can be sent here.`
+                    : "Link a Telegram bot so the app can message your daily recap to you."}
                 </p>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              <ol className="m-0 list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
+                <li>
+                  In Telegram, open <span className="font-medium">@BotFather</span>,
+                  send <span className="font-medium">/newbot</span>, and copy the
+                  bot token it gives you.
+                </li>
+                <li>
+                  Send any message to your new bot, then open{" "}
+                  <span className="font-medium">@userinfobot</span> to get your
+                  numeric Chat ID.
+                </li>
+                <li>Paste both below and click Save Telegram.</li>
+              </ol>
               <div className="grid grid-cols-2 gap-3">
-                <Input
-                  type="password"
-                  placeholder="Bot token"
-                  value={botToken}
-                  onChange={(event) => setBotToken(event.target.value)}
-                />
-                <Input
-                  placeholder="Chat ID"
-                  value={chatId}
-                  onChange={(event) => setChatId(event.target.value)}
-                />
+                <div className="space-y-1">
+                  <Label className="text-xs">Bot token</Label>
+                  <Input
+                    type="password"
+                    placeholder="123456:ABC-DEF..."
+                    value={botToken}
+                    onChange={(event) => setBotToken(event.target.value)}
+                  />
+                  <p className="m-0 text-[11px] text-muted-foreground">
+                    From @BotFather. Kept private on this device.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Chat ID</Label>
+                  <Input
+                    placeholder="e.g. 987654321"
+                    value={chatId}
+                    onChange={(event) => setChatId(event.target.value)}
+                  />
+                  <p className="m-0 text-[11px] text-muted-foreground">
+                    The chat where recaps are delivered.
+                  </p>
+                </div>
               </div>
               <div className="flex flex-wrap gap-3">
                 <Button
@@ -651,7 +676,7 @@ export function SettingsPage() {
               <div>
                 <h3 className="m-0 text-base">Quick access</h3>
                 <p className="m-0 text-xs text-muted-foreground">
-                  Local shortcuts for background windows.
+                  Global keyboard shortcuts to search or create without opening the app.
                 </p>
               </div>
             </CardHeader>
@@ -804,7 +829,7 @@ export function SettingsPage() {
               <div>
                 <h3 className="m-0 text-base">Data</h3>
                 <p className="m-0 text-xs text-muted-foreground">
-                  Account data actions.
+                  Export your memories or clear stored data.
                 </p>
               </div>
             </CardHeader>
