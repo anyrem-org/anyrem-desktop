@@ -76,6 +76,34 @@ const defaultShortcuts: ShortcutPayload = {
   registered: { search: true, create: true },
 };
 
+const timezones = [
+  ["Asia/Ho_Chi_Minh", "Vietnam"],
+  ["Asia/Tokyo", "Japan"],
+  ["Asia/Seoul", "Korea"],
+  ["Asia/Singapore", "Singapore"],
+  ["Asia/Bangkok", "Thailand"],
+  ["Asia/Jakarta", "Indonesia"],
+  ["Asia/Manila", "Philippines"],
+  ["Asia/Kuala_Lumpur", "Malaysia"],
+  ["Australia/Sydney", "Australia"],
+  ["Europe/London", "United Kingdom"],
+  ["Europe/Berlin", "Germany"],
+  ["America/Los_Angeles", "US Pacific"],
+  ["America/New_York", "US Eastern"],
+] as const;
+
+const timezoneOffset = (timeZone: string) =>
+  new Intl.DateTimeFormat("en", {
+    timeZone,
+    timeZoneName: "shortOffset",
+  })
+    .formatToParts(new Date())
+    .find((part) => part.type === "timeZoneName")
+    ?.value.replace("GMT", "UTC") ?? timeZone;
+
+const timezoneLabel = (value: string, label: string) =>
+  `${label} - ${value} - ${timezoneOffset(value)}`;
+
 const platform = () =>
   (window.desktop?.platform ?? navigator.platform).toLowerCase();
 const isMac = () => platform().includes("mac");
@@ -222,7 +250,7 @@ export function SettingsPage() {
     })();
   }, [data?.quick_access.shortcuts]);
 
-  const save = (type: "appearance" | "search" | "recap", key: string, value: string | boolean) =>
+  const save = (type: "appearance" | "search" | "recap" | "regional", key: string, value: string | boolean) =>
     update.mutate([{ type, key, value }]);
 
   const openRecorder = (name: ShortcutName) => {
@@ -542,6 +570,32 @@ export function SettingsPage() {
                     save("recap", "delivery_time", event.target.value)
                   }
                 />
+              </SettingRow>
+              <SettingRow
+                title="Timezone"
+                description="Used to decide today's notes and recap send time."
+              >
+                <Select
+                  value={data.regional.timezone}
+                  onValueChange={(value) =>
+                    save("regional", "timezone", value)
+                  }
+                >
+                  <SelectTrigger className="w-[22rem] max-w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[22rem]">
+                    {timezones.map(([value, label]) => (
+                      <SelectItem
+                        key={value}
+                        value={value}
+                        className="whitespace-nowrap"
+                      >
+                        {timezoneLabel(value, label)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </SettingRow>
               <SettingRow
                 title="Email delivery"
