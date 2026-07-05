@@ -14,6 +14,15 @@ declare global {
     resetShortcuts: () => Promise<ShortcutPayload>;
     onNavigate: (callback: (path: string) => void) => () => void;
     openExternal: (url: string) => Promise<void>;
+    getAppVersion: () => Promise<string>;
+    checkForUpdates: () => Promise<void>;
+    installUpdate: () => Promise<void>;
+    onUpdateStatus: (callback: (status: {
+      status: string;
+      version?: string;
+      percent?: number;
+      message?: string;
+    }) => void) => () => void;
     onGoogleAuth: (callback: (code: string) => void) => () => void;
   } }
 }

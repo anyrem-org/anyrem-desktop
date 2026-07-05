@@ -41,6 +41,7 @@ import {
   useUpdateSettings,
 } from "../hooks/useSettings";
 import type { RecapProvider } from "../../recap/api/recap.api";
+import { AppUpdatesCard } from "../components/AppUpdatesCard";
 
 function SettingRow({
   title,
@@ -403,6 +404,8 @@ export function SettingsPage() {
       )}
       {data && (
         <div className="mt-7 space-y-5">
+          <AppUpdatesCard />
+
           <Card>
             <CardHeader>
               <div>

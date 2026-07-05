@@ -1,9 +1,13 @@
 {
   "name": "anyrem-desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AnyRem desktop client",
   "author": "AnyRem",
   "homepage": "https://anyrem.anzita.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anyrem-org/anyrem-desktop.git"
+  },
   "private": true,
   "packageManager": "pnpm@10.25.0",
   "type": "module",
@@ -59,7 +63,8 @@
     "react-dom": "^19.1.0",
     "react-router-dom": "6.30.4",
     "tailwind-merge": "^3.6.0",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",

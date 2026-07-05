@@ -12,6 +12,13 @@ files:
   - dist/**/*
   - dist-electron/**/*
   - package.json
+  - node_modules/electron-updater/**/*
+  - node_modules/builder-util-runtime/**/*
+  - node_modules/lazy-val/**/*
+  - node_modules/semver/**/*
+  - node_modules/js-yaml/**/*
+  - node_modules/argparse/**/*
+  - node_modules/sax/**/*
 
 asar: true
 npmRebuild: false
@@ -29,6 +36,8 @@ linux:
   category: Office
   maintainer: AnyRem <nguyenanhvu.work@gmail.com>
   mimeTypes: [x-scheme-handler/anyrem]
+  appImage:
+    type: 2
   desktop:
     entry:
       Name: AnyRem
@@ -57,4 +66,6 @@ dmg:
 
 publish:
   provider: github
+  owner: anyrem-org
+  repo: anyrem-desktop
   releaseType: release

@@ -21,6 +21,15 @@ contextBridge.exposeInMainWorld("desktop", {
     ipcRenderer.invoke("shortcuts:set", name, accelerator),
   resetShortcuts: () => ipcRenderer.invoke("shortcuts:reset"),
   openExternal: (url: string) => ipcRenderer.invoke("shell:open-external", url),
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke("app:version"),
+  checkForUpdates: (): Promise<void> => ipcRenderer.invoke("updater:check"),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke("updater:install"),
+  onUpdateStatus: (callback: (status: unknown) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, status: unknown) =>
+      callback(status);
+    ipcRenderer.on("app:update-status", listener);
+    return () => ipcRenderer.removeListener("app:update-status", listener);
+  },
   onNavigate: (callback: (path: string) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, path: string) =>
       callback(path);

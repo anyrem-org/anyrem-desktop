@@ -11,9 +11,8 @@ export function QuickSearchPage() {
   const [selected, setSelected] = useState(0);
   const [detail, setDetail] = useState<Note>();
   const navigate = useNavigate();
-  const closeQuick = () => {
+  const dismiss = () => {
     window.desktop?.closeQuickWindow();
-    window.close();
   };
   const deferredQuery = useDeferredValue(query);
   const search = useSearchNotes({ q: deferredQuery, page: 1, limit: 20, sort: "relevance" });
@@ -23,7 +22,7 @@ export function QuickSearchPage() {
     const keydown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         if (detail) setDetail(undefined);
-        else closeQuick();
+        else dismiss();
       }
       if (detail) return;
       if (event.key === "ArrowDown") {
@@ -47,7 +46,7 @@ export function QuickSearchPage() {
       <QuickNoteDetail
         note={detail}
         onBack={() => setDetail(undefined)}
-        onClose={closeQuick}
+        onClose={dismiss}
         onOpenFull={() =>
           window.desktop
             ? window.desktop.openQuickResult(detail.id)
@@ -71,7 +70,7 @@ export function QuickSearchPage() {
             {search.isFetching ? "Searching…" : `${search.data?.total ?? 0} results`}
           </span>
           <button
-            onClick={closeQuick}
+            onClick={dismiss}
             className="window-no-drag ml-3 rounded-lg border-0 bg-transparent p-2 text-muted-foreground hover:bg-muted"
             aria-label="Close"
           >

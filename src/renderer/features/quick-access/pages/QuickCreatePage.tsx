@@ -86,10 +86,12 @@ export function QuickCreatePage() {
     editor?.commands.clearContent(true);
     create.reset();
   };
-  const close = () => {
-    resetDraft();
+  const dismiss = () => {
     window.desktop?.closeQuickWindow();
-    window.close();
+  };
+  const closeAfterSave = () => {
+    resetDraft();
+    dismiss();
   };
   const save = () => {
     if (!editor || !title.trim()) return;
@@ -100,12 +102,12 @@ export function QuickCreatePage() {
         categoryIds,
         relatedIds,
       },
-      { onSuccess: () => close() },
+      { onSuccess: () => closeAfterSave() },
     );
   };
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close();
+      if (event.key === 'Escape') dismiss();
       if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         save();
@@ -117,7 +119,6 @@ export function QuickCreatePage() {
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        resetDraft();
         void categories.refetch();
         void noteList.refetch();
       }
@@ -125,7 +126,7 @@ export function QuickCreatePage() {
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () =>
       document.removeEventListener('visibilitychange', onVisibilityChange);
-  }, [categories, editor, noteList]);
+  }, [categories, noteList]);
   const setLink = () => {
     const href = window.prompt('Link URL');
     if (href)
@@ -253,5 +254,5 @@ export function QuickCreatePage() {
         { icon: Trash2, label: 'Delete table', run: () => editor.chain().focus().deleteTable().run() },
       ]
     : [];
-  return <main className="h-screen overflow-hidden bg-[#f7f8fc] p-3"><section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl"><header className="window-drag flex h-14 shrink-0 items-center border-b px-4"><div><h1 className="m-0 text-sm font-semibold">Quick create</h1><p className="m-0 text-[11px] text-muted-foreground">Keep it useful, not perfect.</p></div><Button size="sm" className="window-no-drag ml-auto" onClick={save} disabled={create.isPending || !title.trim()}><Check size={15}/> {create.isPending ? 'Saving…' : 'Save memory'}</Button><button onClick={close} className="window-no-drag ml-2 rounded-lg border-0 bg-transparent p-2 text-muted-foreground hover:bg-muted" aria-label="Close"><X size={17} /></button></header>{create.isError && <ErrorMessage message={getApiErrorMessage(create.error)} className="mx-4 mt-3 px-3 py-2 text-xs" />}<Input autoFocus value={title} onChange={(event) => setTitle(event.target.value)} className="h-12 shrink-0 rounded-none border-0 border-b px-5 text-lg font-semibold shadow-none focus-visible:ring-0" placeholder="Memory title" /><div className="flex min-h-10 shrink-0 flex-wrap items-center gap-1 border-b bg-muted/30 px-3 py-1">{tools.map((tool, index) => tool === 'divider' ? <span key={index} className="mx-1 h-6 w-px bg-border" /> : <Button key={tool.label} type="button" title={tool.label} variant="ghost" size="icon" onClick={tool.run} className={cn('size-8', tool.active?.() && 'bg-accent text-accent-foreground')}><tool.icon size={15} /></Button>)}</div><EditorContent editor={editor} className="quick-editor min-h-0 flex-1 overflow-hidden px-5 py-3" /><div className="grid shrink-0 grid-cols-2 gap-3 border-t bg-muted/20 p-3"><div className="flex flex-col gap-1.5"><div className="flex h-8 items-center justify-between"><Label className="block text-xs">Categories</Label><CategoryFormDialog trigger={<Button type="button" variant="ghost" size="sm" className="h-8 px-2.5 text-xs"><Plus size={13} /> New category</Button>} onSaved={(category) => { setCategoryIds((ids) => [...ids, category.id]); }} /></div><MultiSelect options={categoryOptions} value={categoryIds} onChange={setCategoryIds} placeholder="Choose one or more categories" maxVisible={1} searchKey="quick-categories" /></div><div className="flex flex-col gap-1.5"><div className="flex h-8 items-center"><Label className="block text-xs">Related memories</Label></div><MultiSelect options={relatedOptions} value={relatedIds} onChange={setRelatedIds} placeholder="Link existing memories" maxVisible={3} searchKey="quick-related" /></div></div><footer className="flex h-8 shrink-0 items-center px-4 text-[10px] text-muted-foreground"><span>Ctrl/⌘ + Enter save</span><span className="ml-auto">Esc close</span></footer></section></main>;
+  return <main className="h-screen overflow-hidden bg-[#f7f8fc] p-3"><section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl"><header className="window-drag flex h-14 shrink-0 items-center border-b px-4"><div><h1 className="m-0 text-sm font-semibold">Quick create</h1><p className="m-0 text-[11px] text-muted-foreground">Keep it useful, not perfect.</p></div><Button size="sm" className="window-no-drag ml-auto" onClick={save} disabled={create.isPending || !title.trim()}><Check size={15}/> {create.isPending ? 'Saving…' : 'Save memory'}</Button><button onClick={dismiss} className="window-no-drag ml-2 rounded-lg border-0 bg-transparent p-2 text-muted-foreground hover:bg-muted" aria-label="Close"><X size={17} /></button></header>{create.isError && <ErrorMessage message={getApiErrorMessage(create.error)} className="mx-4 mt-3 px-3 py-2 text-xs" />}<Input autoFocus value={title} onChange={(event) => setTitle(event.target.value)} className="h-12 shrink-0 rounded-none border-0 border-b px-5 text-lg font-semibold shadow-none focus-visible:ring-0" placeholder="Memory title" /><div className="flex min-h-10 shrink-0 flex-wrap items-center gap-1 border-b bg-muted/30 px-3 py-1">{tools.map((tool, index) => tool === 'divider' ? <span key={index} className="mx-1 h-6 w-px bg-border" /> : <Button key={tool.label} type="button" title={tool.label} variant="ghost" size="icon" onClick={tool.run} className={cn('size-8', tool.active?.() && 'bg-accent text-accent-foreground')}><tool.icon size={15} /></Button>)}</div><EditorContent editor={editor} className="quick-editor min-h-0 flex-1 overflow-hidden px-5 py-3" /><div className="grid shrink-0 grid-cols-2 gap-3 border-t bg-muted/20 p-3"><div className="flex flex-col gap-1.5"><div className="flex h-8 items-center justify-between"><Label className="block text-xs">Categories</Label><CategoryFormDialog trigger={<Button type="button" variant="ghost" size="sm" className="h-8 px-2.5 text-xs"><Plus size={13} /> New category</Button>} onSaved={(category) => { setCategoryIds((ids) => [...ids, category.id]); }} /></div><MultiSelect options={categoryOptions} value={categoryIds} onChange={setCategoryIds} placeholder="Choose one or more categories" maxVisible={1} searchKey="quick-categories" /></div><div className="flex flex-col gap-1.5"><div className="flex h-8 items-center"><Label className="block text-xs">Related memories</Label></div><MultiSelect options={relatedOptions} value={relatedIds} onChange={setRelatedIds} placeholder="Link existing memories" maxVisible={3} searchKey="quick-related" /></div></div><footer className="flex h-8 shrink-0 items-center px-4 text-[10px] text-muted-foreground"><span>Ctrl/⌘ + Enter save</span><span className="ml-auto">Esc close</span></footer></section></main>;
 }

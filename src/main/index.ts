@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { createQuickWindows } from "./quick-windows.js";
 import { createTray } from "./tray.js";
+import { setupAutoUpdater } from "./updater.js";
 import {
   clearRefreshToken,
   getRefreshToken,
@@ -190,17 +191,19 @@ app.whenReady().then(() => {
   console.log(
     `[shortcuts] search=${searchRegistered} (${quickShortcuts.search}) create=${createRegistered} (${quickShortcuts.create})`,
   );
-  ipcMain.on("quick:close", (event) =>
-    BrowserWindow.fromWebContents(event.sender)?.close(),
-  );
+  ipcMain.on("quick:close", (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    window?.hide();
+  });
   ipcMain.on("quick:open-note", (event, id: string) => {
-    BrowserWindow.fromWebContents(event.sender)?.close();
+    BrowserWindow.fromWebContents(event.sender)?.hide();
     showMain();
     mainWindow?.webContents.send("app:navigate", `/notes/${id}`);
   });
   ipcMain.on("quick:save-note", (event) =>
-    BrowserWindow.fromWebContents(event.sender)?.close(),
+    BrowserWindow.fromWebContents(event.sender)?.hide(),
   );
+  ipcMain.handle("app:version", () => app.getVersion());
   ipcMain.handle("auth:refresh-token:get", () => getRefreshToken());
   ipcMain.handle("auth:refresh-token:set", (_event, token: string) =>
     setRefreshToken(token),
@@ -252,6 +255,7 @@ app.whenReady().then(() => {
     deliverAuthCallback(pendingAuthCallback);
     pendingAuthCallback = null;
   }
+  setupAutoUpdater(() => mainWindow);
   app.on("activate", () => {
     if (!mainWindow || mainWindow.isDestroyed())
       mainWindow = createMainWindow();
