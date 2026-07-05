@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+import type { UpdateStatus } from "./features/settings/types/update-status";
+
 declare global {
   interface Window { desktop?: {
     platform: string;
@@ -17,12 +19,7 @@ declare global {
     getAppVersion: () => Promise<string>;
     checkForUpdates: () => Promise<void>;
     installUpdate: () => Promise<void>;
-    onUpdateStatus: (callback: (status: {
-      status: string;
-      version?: string;
-      percent?: number;
-      message?: string;
-    }) => void) => () => void;
+    onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
     onGoogleAuth: (callback: (code: string) => void) => () => void;
   } }
 }

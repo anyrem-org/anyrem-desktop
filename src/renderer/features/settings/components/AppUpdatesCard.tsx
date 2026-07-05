@@ -6,15 +6,10 @@ import {
   CardContent,
   CardHeader,
 } from "../../../shared/components/ui/card";
-
-type UpdateStatus =
-  | { status: "idle" }
-  | { status: "checking" }
-  | { status: "available"; version: string }
-  | { status: "not-available" }
-  | { status: "downloading"; percent: number }
-  | { status: "downloaded"; version: string }
-  | { status: "error"; message: string };
+import {
+  parseUpdateStatus,
+  type UpdateStatus,
+} from "../types/update-status";
 
 export function AppUpdatesCard() {
   const [version, setVersion] = useState("…");
@@ -22,7 +17,9 @@ export function AppUpdatesCard() {
 
   useEffect(() => {
     void window.desktop?.getAppVersion().then(setVersion);
-    return window.desktop?.onUpdateStatus((payload) => setUpdate(payload));
+    return window.desktop?.onUpdateStatus((payload) =>
+      setUpdate(parseUpdateStatus(payload)),
+    );
   }, []);
 
   const check = () => {
