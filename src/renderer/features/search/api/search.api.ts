@@ -2,8 +2,6 @@ import { apiClient } from "../../../shared/lib/api-client";
 import type { Paginated } from "../../../shared/types/api.types";
 import type { Note } from "../../notes/types/note.types";
 
-export const suggestions = ["offline-first", "Meilisearch", "Tiptap", "product ideas"];
-
 export type SearchHistoryItem = {
   id: string;
   keyword: string;

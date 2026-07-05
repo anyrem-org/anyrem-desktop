@@ -9,6 +9,7 @@ import {
   type SettingUpdate,
   type SettingsData,
 } from "../api/settings.api";
+import { testRecap, type RecapProvider } from "../../recap/api/recap.api";
 
 const settingsKey = ["settings"] as const;
 
@@ -40,6 +41,10 @@ export function useConfigureTelegram() {
 
 export function useTestTelegram() {
   return useMutation({ mutationFn: testTelegram });
+}
+
+export function useTestRecap() {
+  return useMutation({ mutationFn: (provider: RecapProvider) => testRecap(provider) });
 }
 
 export function useRemoveTelegram() {

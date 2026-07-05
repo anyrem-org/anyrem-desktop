@@ -31,14 +31,16 @@ import { Switch } from "../../../shared/components/ui/switch";
 import { getApiErrorMessage } from "../../../shared/lib/api-client";
 import { useUiStore } from "../../../shared/store/ui.store";
 import { useClearSearchHistory } from "../../search/hooks/useSearch";
-import type { Theme, TypoTolerance } from "../api/settings.api";
+import type { Theme } from "../api/settings.api";
 import {
   useConfigureTelegram,
   useRemoveTelegram,
   useSettings,
+  useTestRecap,
   useTestTelegram,
   useUpdateSettings,
 } from "../hooks/useSettings";
+import type { RecapProvider } from "../../recap/api/recap.api";
 
 function SettingRow({
   title,
@@ -217,6 +219,7 @@ export function SettingsPage() {
   const clearHistory = useClearSearchHistory();
   const configureTelegram = useConfigureTelegram();
   const testTelegram = useTestTelegram();
+  const testRecap = useTestRecap();
   const removeTelegram = useRemoveTelegram();
   const setActivityOpen = useUiStore((state) => state.setActivityOpen);
   const user = useAuthStore((state) => state.user);
@@ -231,6 +234,7 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
+  const [testRecapProvider, setTestRecapProvider] = useState<RecapProvider>("EMAIL");
 
   useEffect(() => {
     if (!data) return;
@@ -435,17 +439,6 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent>
               <SettingRow
-                title="Search as you type"
-                description="Update results while entering a query."
-              >
-                <Switch
-                  checked={data.search.search_as_you_type}
-                  onCheckedChange={(value) =>
-                    save("search", "search_as_you_type", value)
-                  }
-                />
-              </SettingRow>
-              <SettingRow
                 title="Save search history"
                 description="Show recent searches when the field is focused."
               >
@@ -455,26 +448,6 @@ export function SettingsPage() {
                     save("search", "save_history", value)
                   }
                 />
-              </SettingRow>
-              <SettingRow
-                title="Typo tolerance"
-                description="How forgiving search is with misspelled words. Flexible finds more, Strict is exact."
-              >
-                <Select
-                  value={data.search.typo_tolerance}
-                  onValueChange={(value) =>
-                    save("search", "typo_tolerance", value as TypoTolerance)
-                  }
-                >
-                  <SelectTrigger className="w-36">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="BALANCED">Balanced</SelectItem>
-                    <SelectItem value="STRICT">Strict</SelectItem>
-                    <SelectItem value="FLEXIBLE">Flexible</SelectItem>
-                  </SelectContent>
-                </Select>
               </SettingRow>
             </CardContent>
           </Card>
@@ -610,13 +583,47 @@ export function SettingsPage() {
                   }
                 />
               </SettingRow>
-              <Button
-                variant="outline"
-                className="mt-5"
-                disabled={!data.recap.enabled}
-              >
-                Send test recap
-              </Button>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <Select
+                  value={testRecapProvider}
+                  onValueChange={(value) =>
+                    setTestRecapProvider(value as RecapProvider)
+                  }
+                  disabled={!data.recap.enabled}
+                >
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EMAIL">Email</SelectItem>
+                    <SelectItem value="TELEGRAM" disabled={!data.telegram.configured}>
+                      Telegram
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  disabled={
+                    !data.recap.enabled ||
+                    testRecap.isPending ||
+                    (testRecapProvider === "TELEGRAM" && !data.telegram.configured)
+                  }
+                  onClick={() => testRecap.mutate(testRecapProvider)}
+                >
+                  {testRecap.isPending ? "Sending..." : "Send test recap"}
+                </Button>
+              </div>
+              {testRecap.isError && (
+                <ErrorMessage
+                  message={getApiErrorMessage(testRecap.error)}
+                  className="mt-3"
+                />
+              )}
+              {testRecap.isSuccess && (
+                <p className="mb-0 mt-3 text-xs text-emerald-600">
+                  Test recap sent.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -872,14 +879,11 @@ export function SettingsPage() {
               <div>
                 <h3 className="m-0 text-base">Data</h3>
                 <p className="m-0 text-xs text-muted-foreground">
-                  Export your memories or clear stored data.
+                  Clear your saved search history.
                 </p>
               </div>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-3">
-              <Button variant="outline" disabled>
-                Export memories
-              </Button>
               <Button
                 variant="outline"
                 onClick={() => clearHistory.mutate()}

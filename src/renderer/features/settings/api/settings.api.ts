@@ -1,7 +1,6 @@
 import { apiClient } from "../../../shared/lib/api-client";
 
 export type Theme = "LIGHT" | "DARK" | "SYSTEM";
-export type TypoTolerance = "STRICT" | "BALANCED" | "FLEXIBLE";
 
 export type SettingsData = {
   appearance: {
@@ -9,13 +8,10 @@ export type SettingsData = {
     show_activity_panel: boolean;
   };
   regional: {
-    locale: string;
     timezone: string;
   };
   search: {
-    search_as_you_type: boolean;
     save_history: boolean;
-    typo_tolerance: TypoTolerance;
   };
   quick_access: {
     shortcuts: Record<"search" | "create", string>;

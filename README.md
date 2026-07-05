@@ -2,7 +2,7 @@
 
 A "Remember Anything" desktop app, built with **Electron + React + TypeScript + Vite**.
 
-> Current status: only the Frontend (Electron) exists, no backend yet. The app runs on **mock data / mock API**.
+The app connects to the **AnyRem backend** (`anyrem-be`) for auth, notes, search, settings, and daily recap delivery.
 
 ---
 
@@ -128,11 +128,13 @@ cp .env.example .env
 copy .env.example .env
 ```
 
-Contents of `.env` (defaults point to a local backend — not needed yet since we use mocks):
+Contents of `.env`:
 
 ```env
 VITE_API_URL=http://localhost:3000/api
 ```
+
+Start the backend first (see `../anyrem-be`). For Google sign-in, configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `DESKTOP_CALLBACK_URL=anyrem://auth/callback` on the backend.
 
 ---
 
@@ -173,6 +175,16 @@ Minimizing **hides the app to the system tray**. Right-clicking the tray icon sh
 
 ---
 
+## 8.1 Google sign-in (deep link)
+
+"Continue with Google" opens the system browser. When the backend finishes OAuth it redirects to `anyrem://auth/callback?code=...`, which the app receives via the custom `anyrem://` protocol and exchanges for a session.
+
+- In **dev** (`pnpm dev`), Electron registers the protocol against the local executable automatically.
+- In a **packaged** build, the protocol handler is registered on install. On macOS it works out of the box via `open-url`; on Windows/Linux the launch argument is parsed on cold start / `second-instance`. If you add `electron-builder`, set `protocols` (name + `anyrem` scheme) so the OS routes the URL to the app; on Linux the generated `.desktop` file must declare `MimeType=x-scheme-handler/anyrem;`.
+- Backend must set `DESKTOP_CALLBACK_URL=anyrem://auth/callback` plus `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+
+---
+
 ## 9. Troubleshooting
 
 **`node -v` doesn't print 22.x**
@@ -207,4 +219,4 @@ src/
     shared/    # Shared UI primitives (shadcn-style)
 ```
 
-Additional design docs: `remember-anything-brief.md`, `dashboard.md`, `quick-access.md`, `PROJECT_CONTEXT.md`.
+Additional design docs: `remember-anything-brief.md`, `dashboard.md`, `quick-access.md`.

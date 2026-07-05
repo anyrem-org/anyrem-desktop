@@ -3,6 +3,7 @@ import {
   BrowserWindow,
   globalShortcut,
   ipcMain,
+  shell,
   type Tray,
 } from "electron";
 import fs from "node:fs";
@@ -17,11 +18,67 @@ import {
 } from "./token-vault.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const AUTH_PROTOCOL = "anyrem";
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let quitting = false;
+let pendingAuthCallback: string | null = null;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) app.quit();
+
+const showMain = () => {
+  if (mainWindow?.isMinimized()) mainWindow.restore();
+  mainWindow?.show();
+  mainWindow?.focus();
+  mainWindow?.moveTop();
+};
+
+const deliverAuthCallback = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== `${AUTH_PROTOCOL}:`) return;
+    if (parsed.hostname !== "auth") return;
+    const code = parsed.searchParams.get("code");
+    if (!code) return;
+    const contents = mainWindow?.webContents;
+    if (!contents) {
+      pendingAuthCallback = url;
+      return;
+    }
+    // If the renderer hasn't loaded yet, wait for it before sending the IPC.
+    if (contents.isLoading()) {
+      contents.once("did-finish-load", () => {
+        contents.send("app:google-auth", code);
+        showMain();
+      });
+      return;
+    }
+    contents.send("app:google-auth", code);
+    showMain();
+  } catch {
+    // ignore malformed callback URLs
+  }
+};
+
+const handleAuthCallback = (url: string) => {
+  if (mainWindow) deliverAuthCallback(url);
+  else pendingAuthCallback = url;
+};
+
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient(AUTH_PROTOCOL, process.execPath, [
+      path.resolve(process.argv[1]),
+    ]);
+  }
+} else {
+  app.setAsDefaultProtocolClient(AUTH_PROTOCOL);
+}
+
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  handleAuthCallback(url);
+});
 
 // On Wayland, global shortcuts only work through the XDG GlobalShortcuts portal
 // and the native Wayland backend. Under XWayland (X11), GNOME refuses global key
@@ -120,12 +177,6 @@ app.whenReady().then(() => {
     path.join(__dirname, "../preload/index.cjs"),
     !app.isPackaged,
   );
-  const showMain = () => {
-    if (mainWindow?.isMinimized()) mainWindow.restore();
-    mainWindow?.show();
-    mainWindow?.focus();
-    mainWindow?.moveTop();
-  };
   tray = createTray({
     showMain,
     showSearch: quick.showSearch,
@@ -155,6 +206,9 @@ app.whenReady().then(() => {
     setRefreshToken(token),
   );
   ipcMain.handle("auth:refresh-token:clear", () => clearRefreshToken());
+  ipcMain.handle("shell:open-external", (_event, url: string) =>
+    shell.openExternal(url),
+  );
   ipcMain.handle("shortcuts:get", () => shortcutPayload());
   ipcMain.handle(
     "shortcuts:set",
@@ -189,6 +243,15 @@ app.whenReady().then(() => {
     saveShortcuts();
     return shortcutPayload();
   });
+  // Windows/Linux cold start: the deep link arrives as a launch argument.
+  const startupUrl = process.argv.find((arg) =>
+    arg.startsWith(`${AUTH_PROTOCOL}://`),
+  );
+  if (startupUrl) pendingAuthCallback = startupUrl;
+  if (pendingAuthCallback) {
+    deliverAuthCallback(pendingAuthCallback);
+    pendingAuthCallback = null;
+  }
   app.on("activate", () => {
     if (!mainWindow || mainWindow.isDestroyed())
       mainWindow = createMainWindow();
@@ -204,9 +267,10 @@ app.on("will-quit", () => {
   tray?.destroy();
   tray = null;
 });
-app.on("second-instance", () => {
-  mainWindow?.show();
-  mainWindow?.focus();
+app.on("second-instance", (_event, argv) => {
+  const url = argv.find((arg) => arg.startsWith(`${AUTH_PROTOCOL}://`));
+  if (url) handleAuthCallback(url);
+  showMain();
 });
 process.on("SIGINT", () => app.quit());
 process.on("SIGTERM", () => app.quit());

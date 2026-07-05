@@ -11,4 +11,5 @@ export type AuthUser = {
   } | null;
 };
 export type LoginInput = { email: string; password: string; deviceName?: string };
+export type RegisterInput = { email: string; password: string; name: string };
 export type TokenResponse = { accessToken: string; refreshToken: string; expiresIn: number };

@@ -13,6 +13,8 @@ declare global {
     setShortcut: (name: ShortcutName, accelerator: string) => Promise<ShortcutPayload & { ok: boolean; pending?: boolean }>;
     resetShortcuts: () => Promise<ShortcutPayload>;
     onNavigate: (callback: (path: string) => void) => () => void;
+    openExternal: (url: string) => Promise<void>;
+    onGoogleAuth: (callback: (code: string) => void) => () => void;
   } }
 }
 

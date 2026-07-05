@@ -20,10 +20,17 @@ contextBridge.exposeInMainWorld("desktop", {
   setShortcut: (name: "search" | "create", accelerator: string) =>
     ipcRenderer.invoke("shortcuts:set", name, accelerator),
   resetShortcuts: () => ipcRenderer.invoke("shortcuts:reset"),
+  openExternal: (url: string) => ipcRenderer.invoke("shell:open-external", url),
   onNavigate: (callback: (path: string) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, path: string) =>
       callback(path);
     ipcRenderer.on("app:navigate", listener);
     return () => ipcRenderer.removeListener("app:navigate", listener);
+  },
+  onGoogleAuth: (callback: (code: string) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, code: string) =>
+      callback(code);
+    ipcRenderer.on("app:google-auth", listener);
+    return () => ipcRenderer.removeListener("app:google-auth", listener);
   },
 });

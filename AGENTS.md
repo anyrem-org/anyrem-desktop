@@ -9,9 +9,9 @@ Read this before making changes.
 
 **AnyRem / "Remember Anything"** — a desktop app to quickly capture notes while working and recall them fast (Google-like search), with related content and a knowledge graph.
 
-**Current phase: Frontend only.** No backend exists. The app runs entirely on **mock data / mock API modules**. Do NOT build backend (NestJS, Prisma, PostgreSQL, Meilisearch, Redis/BullMQ, Telegram, auth server, offline SQLite) — those are future phases.
+The desktop app talks to the **NestJS backend** in `../anyrem-be` (PostgreSQL, Prisma, Meilisearch, Redis/BullMQ, email/Telegram recap). Do not reintroduce mock API modules or hardcoded sample data in feature code.
 
-Detailed product/engineering spec: `remember-anything-brief.md`. Screen specs: `dashboard.md`, `quick-access.md`. Living status: `PROJECT_CONTEXT.md`.
+Detailed product/engineering spec: `remember-anything-brief.md`. Screen specs: `dashboard.md`, `quick-access.md`.
 
 ---
 
@@ -38,7 +38,7 @@ pnpm typecheck     # tsc -b, no emit
 pnpm test          # vitest run
 ```
 
-Setup details for new devs are in `README.md`.
+Setup details for new devs are in `README.md`. Backend setup is in `../anyrem-be/README.md` (if present).
 
 ---
 
@@ -46,7 +46,7 @@ Setup details for new devs are in `README.md`.
 
 ```
 src/
-  main/        # Electron main: windows, global shortcuts, tray, token vault
+  main/        # Electron main: windows, global shortcuts, tray, token vault, OAuth callback
   preload/     # IPC bridge (contextBridge)
   renderer/
     app/         # App.tsx, router, providers
@@ -55,7 +55,7 @@ src/
     shared/      # ui primitives, hooks, lib, store, types
 ```
 
-`features/` modules: `auth`, `dashboard`, `search`, `notes`, `categories`, `graph`, `settings`, `quick-access`, `activity`, `avatars`, `uploads`.
+`features/` modules: `auth`, `dashboard`, `search`, `notes`, `categories`, `graph`, `settings`, `quick-access`, `activity`, `avatars`, `uploads`, `recap`.
 
 Each feature typically has: `components/`, `hooks/`, `api/`, `types/`, `pages/`.
 
@@ -66,8 +66,8 @@ Each feature typically has: `components/`, `hooks/`, `api/`, `types/`, `pages/`.
 - **Feature-based structure.** Keep code inside its feature folder. No giant files.
 - **No direct API calls in components.** Call through `features/*/api/*.api.ts`, consume via hooks (`useNotes`, `useSearch`, ...).
 - **No business logic inside JSX.**
-- **Mock data lives in api/mock modules** (e.g. `categories.mock.ts`), never hardcoded inside components.
-- **State:** TanStack Query for server-ish data, Zustand for UI state (sidebar, panels, modals, theme). Don't duplicate server data into Zustand.
+- **No mock data in production API modules.** All data comes from the backend via `apiClient`.
+- **State:** TanStack Query for server data, Zustand for UI state (sidebar, panels, modals). Don't duplicate server data into Zustand.
 - **TypeScript:** proper types, avoid `any` unless necessary.
 - **UI:** shadcn-style primitives in `shared/components/ui`; Tailwind for layout. Light theme, clean/minimal, soft blue/purple accent.
 - **Electron security:** keep main/preload/renderer separated; use preload + contextBridge; don't enable `nodeIntegration` in renderer unless needed.
@@ -80,6 +80,7 @@ Each feature typically has: `components/`, `hooks/`, `api/`, `types/`, `pages/`.
 - After editing `src/main` or `src/preload`, **fully quit Electron** (it may be hidden in the tray → tray menu → Quit) before `pnpm dev` again. Main/preload do NOT hot-reload; only the renderer does.
 - If Electron reports `failed to install correctly`: `rm -rf node_modules/electron && pnpm install`. `pnpm.onlyBuiltDependencies` already covers `electron` and `esbuild`.
 - Minimize hides the app to the system tray (Open / Quick Search / Quick Create / Quit).
+- Google sign-in opens the system browser and returns via the `anyrem://auth/callback` custom protocol.
 
 ## Global shortcuts
 
@@ -92,6 +93,6 @@ Each feature typically has: `components/`, `hooks/`, `api/`, `types/`, `pages/`.
 ## Before finishing a change
 
 1. `pnpm typecheck` must pass.
-2. `pnpm build` should pass (bundle ~1MB warning is known/acceptable in the mock FE phase).
-3. Keep changes within current scope: **FE + mocks only**, don't introduce backend or real network calls.
-4. Update `PROJECT_CONTEXT.md` if you change architecture or notable behavior.
+2. `pnpm build` should pass (bundle ~1MB warning is acceptable).
+3. Keep API calls in `features/*/api/*.api.ts`; wire new backend endpoints through hooks.
+4. Update `README.md` when setup or env requirements change.
