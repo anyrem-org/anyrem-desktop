@@ -42,9 +42,9 @@ win:
 mac:
   target: [dmg, zip]
   category: public.app-category.productivity
-  hardenedRuntime: true
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
+  # Unsigned CI builds. Remove identity:null and set hardenedRuntime when MACOS_CSC_LINK secret exists.
+  identity: null
+  gatekeeperAssess: false
 
 nsis:
   oneClick: false

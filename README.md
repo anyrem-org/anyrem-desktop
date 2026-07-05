@@ -190,7 +190,7 @@ git push origin desktop-v0.1.0
 
 Or run the **Release Desktop** workflow manually from GitHub Actions.
 
-Optional signing secrets for CI: `MACOS_CSC_LINK`, `MACOS_CSC_KEY_PASSWORD`, `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD`.
+Optional signing secrets for CI: `MACOS_CSC_LINK`, `MACOS_CSC_KEY_PASSWORD`, `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD`. Without them, macOS/Windows build unsigned (see `electron-builder.yml` `mac.identity: null`).
 
 ---
 
