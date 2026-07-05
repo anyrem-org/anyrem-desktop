@@ -6,7 +6,6 @@ export type TypoTolerance = "STRICT" | "BALANCED" | "FLEXIBLE";
 export type SettingsData = {
   appearance: {
     theme: Theme;
-    compact_density: boolean;
     show_activity_panel: boolean;
   };
   regional: {

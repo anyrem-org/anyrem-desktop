@@ -504,17 +504,6 @@ export function SettingsPage() {
                   }}
                 />
               </SettingRow>
-              <SettingRow
-                title="Compact density"
-                description="Reduce spacing to fit more memories."
-              >
-                <Switch
-                  checked={data.appearance.compact_density}
-                  onCheckedChange={(value) =>
-                    save("appearance", "compact_density", value)
-                  }
-                />
-              </SettingRow>
               <SettingRow title="Theme" description="Choose app color mode.">
                 <Select
                   value={data.appearance.theme}
