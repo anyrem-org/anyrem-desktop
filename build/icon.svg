@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="AnyRem">
+  <rect width="1024" height="1024" rx="220" fill="#4F46E5"/>
+  <path
+    fill="#FFFFFF"
+    d="M290 710 L420 330 L520 330 L650 710 L560 710 L535 630 L405 630 L380 710 Z M430 560 L510 560 L470 420 Z"
+  />
+  <circle cx="760" cy="360" r="52" fill="#A5B4FC"/>
+</svg>

@@ -12,10 +12,10 @@ export function createTray(actions: {
   const tray = new Tray(
     nativeImage.createFromDataURL(`data:image/png;base64,${icon}`),
   );
-  tray.setToolTip("Remember Anything");
+  tray.setToolTip("AnyRem");
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: "Open Remember Anything", click: actions.showMain },
+      { label: "Open AnyRem", click: actions.showMain },
       { type: "separator" },
       {
         label: "Quick Search",

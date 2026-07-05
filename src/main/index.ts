@@ -87,7 +87,7 @@ if (process.platform === "linux") {
   app.commandLine.appendSwitch("enable-features", "GlobalShortcutsPortal");
   if (process.env.WAYLAND_DISPLAY)
     app.commandLine.appendSwitch("ozone-platform", "wayland");
-  app.setName("anyrem-desktop");
+  app.setName("AnyRem");
 }
 
 type ShortcutName = "search" | "create";

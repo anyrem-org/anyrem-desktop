@@ -158,8 +158,39 @@ The Electron window pops up automatically. Editing renderer code hot-reloads.
 |---------|---------|
 | `pnpm dev` | Run the app in development mode. |
 | `pnpm build` | Production build (typecheck + build renderer + build Electron). |
+| `pnpm icons` | Generate `build/icon.png` from `build/icon.svg`. |
+| `pnpm dist:linux` | Build Linux AppImage + `.deb` into `release/`. |
+| `pnpm dist:win` | Build Windows NSIS installer (run on Windows). |
+| `pnpm dist:mac` | Build macOS `.dmg` (run on macOS). |
 | `pnpm typecheck` | TypeScript type checking only. |
 | `pnpm test` | Run tests with Vitest. |
+
+---
+
+## 7.1 Package & release (electron-builder)
+
+Config: `electron-builder.yml`. CI: `.github/workflows/release-desktop.yml`.
+
+**Local build (Linux):**
+
+```bash
+cd anyrem-desktop
+cp .env.production.example .env.production   # edit VITE_API_URL if needed
+pnpm install
+pnpm dist:linux
+ls release/
+```
+
+**GitHub Release (all platforms):**
+
+```bash
+git tag desktop-v0.1.0
+git push origin desktop-v0.1.0
+```
+
+Or run the **Release Desktop** workflow manually from GitHub Actions.
+
+Optional signing secrets for CI: `MACOS_CSC_LINK`, `MACOS_CSC_KEY_PASSWORD`, `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD`.
 
 ---
 
@@ -180,7 +211,7 @@ Minimizing **hides the app to the system tray**. Right-clicking the tray icon sh
 "Continue with Google" opens the system browser. When the backend finishes OAuth it redirects to `anyrem://auth/callback?code=...`, which the app receives via the custom `anyrem://` protocol and exchanges for a session.
 
 - In **dev** (`pnpm dev`), Electron registers the protocol against the local executable automatically.
-- In a **packaged** build, the protocol handler is registered on install. On macOS it works out of the box via `open-url`; on Windows/Linux the launch argument is parsed on cold start / `second-instance`. If you add `electron-builder`, set `protocols` (name + `anyrem` scheme) so the OS routes the URL to the app; on Linux the generated `.desktop` file must declare `MimeType=x-scheme-handler/anyrem;`.
+- In a **packaged** build, the protocol handler is registered on install. On macOS it works out of the box via `open-url`; on Windows/Linux the launch argument is parsed on cold start / `second-instance`. `electron-builder.yml` already declares the `anyrem` scheme and Linux `MimeType=x-scheme-handler/anyrem;`.
 - Backend must set `DESKTOP_CALLBACK_URL=anyrem://auth/callback` plus `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
 
 ---

@@ -19,8 +19,8 @@ function createQuickWindow(route: QuickRoute, preload: string, isDev: boolean) {
   const window = new BrowserWindow({
     title:
       route === "quick-search"
-        ? "Remember Anything — Quick Search"
-        : "Remember Anything — Quick Create",
+        ? "AnyRem — Quick Search"
+        : "AnyRem — Quick Create",
     width: 720,
     height: route === "quick-search" ? 520 : 610,
     show: false,

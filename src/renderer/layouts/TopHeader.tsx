@@ -50,7 +50,7 @@ export function TopHeader() {
         <h1 className="m-0 text-lg font-semibold">
           {pathname.startsWith("/notes/") && pathname !== "/notes/new"
             ? "Note detail"
-            : (titles[pathname] ?? "Remember Anything")}
+            : (titles[pathname] ?? "AnyRem")}
         </h1>
       </div>
       <div className="ml-auto flex items-center gap-2">

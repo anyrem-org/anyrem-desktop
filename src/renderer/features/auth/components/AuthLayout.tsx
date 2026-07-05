@@ -20,7 +20,7 @@ export function AuthLayout({
             <span className="grid size-10 place-items-center rounded-xl bg-white/10">
               <BookOpen size={20} />
             </span>
-            <strong>Remember Anything</strong>
+            <strong>AnyRem</strong>
           </div>
           <div className="my-auto max-w-xl">
             <p className="mb-4 text-sm font-semibold uppercase tracking-[.2em] text-indigo-300">

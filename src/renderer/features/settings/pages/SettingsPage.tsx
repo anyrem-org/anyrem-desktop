@@ -390,7 +390,7 @@ export function SettingsPage() {
     <div className="mx-auto max-w-7xl p-8">
       <h2 className="mb-1 text-2xl">Settings</h2>
       <p className="mt-0 text-sm text-muted-foreground">
-        Configure how Remember Anything behaves.
+        Configure how AnyRem behaves.
       </p>
       {settings.isPending && (
         <p className="mt-7 text-sm text-muted-foreground">Loading settings...</p>

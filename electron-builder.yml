@@ -1,0 +1,60 @@
+# https://www.electron.build/docs/configuration
+appId: com.anyrem.desktop
+productName: AnyRem
+copyright: Copyright © 2026 AnyRem
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+
+asar: true
+npmRebuild: false
+nodeGypRebuild: false
+
+extraMetadata:
+  main: dist-electron/main/index.js
+
+protocols:
+  - name: AnyRem Auth
+    schemes: [anyrem]
+
+linux:
+  target: [AppImage, deb]
+  category: Office
+  maintainer: AnyRem <nguyenanhvu.work@gmail.com>
+  mimeTypes: [x-scheme-handler/anyrem]
+  desktop:
+    entry:
+      Name: AnyRem
+      MimeType: x-scheme-handler/anyrem;
+
+win:
+  target: [nsis]
+  signtoolOptions:
+    publisherName: AnyRem
+
+mac:
+  target: [dmg, zip]
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: AnyRem
+
+dmg:
+  title: AnyRem ${version}
+
+publish:
+  provider: github
+  releaseType: release

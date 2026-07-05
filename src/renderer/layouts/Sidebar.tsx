@@ -31,7 +31,7 @@ export function Sidebar() {
         </span>
         {open && (
           <div>
-            <p className="m-0 whitespace-nowrap font-bold">Remember Anything</p>
+            <p className="m-0 whitespace-nowrap font-bold">AnyRem</p>
             <p className="m-0 text-[11px] text-slate-400">Your second memory</p>
           </div>
         )}
