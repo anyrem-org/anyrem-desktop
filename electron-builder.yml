@@ -36,11 +36,11 @@ linux:
   category: Office
   maintainer: AnyRem <nguyenanhvu.work@gmail.com>
   mimeTypes: [x-scheme-handler/anyrem]
-  appImage:
-    type: 2
   desktop:
     entry:
       Name: AnyRem
+      Comment: Remember anything, find it fast
+      StartupWMClass: AnyRem
       MimeType: x-scheme-handler/anyrem;
 
 win:
