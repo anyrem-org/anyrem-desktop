@@ -7,6 +7,8 @@ import { avatarAssetUrl } from "../../avatars/api/avatars.api";
 import { useSearchHistory } from "../../search/hooks/useSearch";
 
 export function DashboardSearch() {
+  const currentTime = new Date();
+  const currentHour = currentTime.getHours();
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -21,6 +23,15 @@ export function DashboardSearch() {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+  };
+  const getGreeting = () => {
+    if (currentHour >= 5 && currentHour < 12) {
+      return "Good morning";
+    } else if (currentHour >= 12 && currentHour < 17) {
+      return "Good afternoon";
+    } else {
+      return "Good evening";
+    }
   };
   return (
     <section className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 text-white shadow-xl">
@@ -39,7 +50,9 @@ export function DashboardSearch() {
             initials
           )}
         </span>
-        <h2 className="m-0 text-3xl">Good morning, {user?.name ?? "Anh"}.</h2>
+        <h2 className="m-0 text-3xl">
+          {getGreeting()}, {user?.name ?? "Anh"}.
+        </h2>
       </div>
       <p className="mt-0 text-sm text-slate-300">
         What do you want to remember or continue?
