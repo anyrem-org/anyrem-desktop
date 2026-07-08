@@ -1,11 +1,11 @@
-import { ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getApiErrorMessage } from "../../../shared/lib/api-client";
+import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
 import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { Badge } from "../../../shared/components/ui/badge";
 import { Button } from "../../../shared/components/ui/button";
 import { Card, CardContent } from "../../../shared/components/ui/card";
-import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
+import { getApiErrorMessage } from "../../../shared/lib/api-client";
 import { CategoryFormDialog } from "../components/CategoryFormDialog";
 import { CategoryIcon } from "../components/CategoryIcon";
 import { useDeleteCategory, useGetCategories } from "../hooks/useCategories";
@@ -56,7 +56,12 @@ export function CategoriesPage() {
             <Card
               key={category.id}
               className="h-full transition hover:border-primary/30 hover:shadow-md"
+              
             >
+                 <Link
+                      to={`/categories/${category.id}`}
+                      className="no-underline"
+                    >
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <span
@@ -75,14 +80,6 @@ export function CategoriesPage() {
                   {category.description}
                 </p>
                 <div className="mt-4 flex gap-2">
-                  <Button size="sm" variant="outline" asChild>
-                    <Link
-                      to={`/categories/${category.id}`}
-                      className="no-underline"
-                    >
-                      <ExternalLink size={14} /> Open
-                    </Link>
-                  </Button>
                   <CategoryFormDialog
                     category={category}
                     trigger={
@@ -111,6 +108,7 @@ export function CategoriesPage() {
                   />
                 </div>
               </CardContent>
+              </Link>
             </Card>
           ))}
         </div>
