@@ -43,6 +43,7 @@
     "@radix-ui/react-slot": "^1.3.0",
     "@radix-ui/react-switch": "^1.3.1",
     "@tanstack/react-query": "^5.80.7",
+    "@tiptap/extension-code-block-lowlight": "^2.26.1",
     "@tiptap/extension-highlight": "2.26.1",
     "@tiptap/extension-link": "2.26.1",
     "@tiptap/extension-placeholder": "2.26.1",
@@ -58,13 +59,14 @@
     "axios": "^1.18.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "electron-updater": "^6.6.2",
+    "lowlight": "3.3.0",
     "lucide-react": "^0.515.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "6.30.4",
     "tailwind-merge": "^3.6.0",
-    "zustand": "^5.0.5",
-    "electron-updater": "^6.6.2"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
