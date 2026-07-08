@@ -1,4 +1,5 @@
 import Highlight from "@tiptap/extension-highlight";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Table from "@tiptap/extension-table";
@@ -11,14 +12,17 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
   AlignCenter,
+  AlignJustify,
   AlignLeft,
   AlignRight,
+  ArrowLeft,
   Bold,
+  ChevronDown,
   Code,
   Heading1,
   Heading2,
   Highlighter,
-  Image as ImageIcon,
+  ImagePlus,
   Italic,
   Link2,
   List,
@@ -28,6 +32,8 @@ import {
   Redo2,
   Save,
   Strikethrough,
+  Subscript,
+  Superscript,
   Table2,
   TableCellsMerge,
   TableCellsSplit,
@@ -44,6 +50,12 @@ import { MultiSelect } from "../../../shared/components/MultiSelect";
 import { ErrorMessage } from "../../../shared/components/ErrorMessage";
 import { Button } from "../../../shared/components/ui/button";
 import { Card } from "../../../shared/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../../shared/components/ui/dropdown-menu";
 import { Input } from "../../../shared/components/ui/input";
 import { Label } from "../../../shared/components/ui/label";
 import { getApiErrorMessage } from "../../../shared/lib/api-client";
@@ -52,7 +64,9 @@ import { useUiStore } from "../../../shared/store/ui.store";
 import { CategoryFormDialog } from "../../categories/components/CategoryFormDialog";
 import { useGetCategories } from "../../categories/hooks/useCategories";
 import { ImageNode } from "../editor/ImageNode";
-import { pasteImages } from "../editor/image-upload";
+import { SubscriptMark, SuperscriptMark } from "../editor/ScriptMarks";
+import { insertImages, pasteImages } from "../editor/image-upload";
+import { codeLanguages, lowlight } from "../editor/lowlight";
 import { useCreateNote, useGetNote, useGetNotes, useUpdateNote } from "../hooks/useNotes";
 
 type Tool = {
@@ -61,6 +75,13 @@ type Tool = {
   active?: () => boolean;
   run: () => void;
 };
+
+type ToolGroup = {
+  icon: typeof Bold;
+  label: string;
+  tools: Tool[];
+};
+
 export function NoteEditorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -74,13 +95,19 @@ export function NoteEditorPage() {
   const noteList = useGetNotes({ page: 1, limit: 100 });
   const create = useCreateNote();
   const update = useUpdateNote();
+  const goBack = () =>
+    window.history.length > 1 ? navigate(-1) : navigate(id ? `/notes/${id}` : "/search");
   const initialized = useRef(false);
   const editorRef = useRef<Parameters<typeof pasteImages>[0] | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ codeBlock: false }),
+      CodeBlockLowlight.configure({ lowlight }),
       Underline,
       Highlight,
+      SuperscriptMark,
+      SubscriptMark,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Link.configure({ openOnClick: false }),
       ImageNode,
@@ -126,7 +153,14 @@ export function NoteEditorPage() {
     if (href)
       editor?.chain().focus().extendMarkRange("link").setLink({ href }).run();
   };
-  const tools: (Tool | "divider")[] = editor
+  const addImages = (files: FileList | null) => {
+    if (!editor || !files?.length) return;
+    void insertImages(
+      editor,
+      Array.from(files).filter((file) => file.type.startsWith("image/")),
+    );
+  };
+  const toolbar: Array<Tool | ToolGroup | "divider"> = editor
     ? [
         {
           icon: Undo2,
@@ -141,15 +175,27 @@ export function NoteEditorPage() {
         "divider",
         {
           icon: Heading1,
-          label: "Heading 1",
-          active: () => editor.isActive("heading", { level: 1 }),
-          run: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-        },
-        {
-          icon: Heading2,
-          label: "Heading 2",
-          active: () => editor.isActive("heading", { level: 2 }),
-          run: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+          label: "Text style",
+          tools: [
+            {
+              icon: Heading1,
+              label: "Paragraph",
+              active: () => editor.isActive("paragraph"),
+              run: () => editor.chain().focus().setParagraph().run(),
+            },
+            {
+              icon: Heading1,
+              label: "Heading 1",
+              active: () => editor.isActive("heading", { level: 1 }),
+              run: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
+            },
+            {
+              icon: Heading2,
+              label: "Heading 2",
+              active: () => editor.isActive("heading", { level: 2 }),
+              run: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+            },
+          ],
         },
         {
           icon: Bold,
@@ -188,103 +234,158 @@ export function NoteEditorPage() {
           run: setLink,
         },
         {
-          icon: ImageIcon,
-          label: "Delete image",
-          active: () => editor.isActive("image"),
-          run: () => editor.chain().focus().deleteSelection().run(),
+          icon: Code,
+          label: "Inline code",
+          active: () => editor.isActive("code"),
+          run: () => editor.chain().focus().toggleCode().run(),
+        },
+        {
+          icon: Superscript,
+          label: "Superscript",
+          active: () => editor.isActive("superscript"),
+          run: () => editor.chain().focus().toggleMark("superscript").run(),
+        },
+        {
+          icon: Subscript,
+          label: "Subscript",
+          active: () => editor.isActive("subscript"),
+          run: () => editor.chain().focus().toggleMark("subscript").run(),
         },
         "divider",
         {
           icon: List,
-          label: "Bullet list",
-          active: () => editor.isActive("bulletList"),
-          run: () => editor.chain().focus().toggleBulletList().run(),
-        },
-        {
-          icon: ListOrdered,
-          label: "Numbered list",
-          active: () => editor.isActive("orderedList"),
-          run: () => editor.chain().focus().toggleOrderedList().run(),
-        },
-        {
-          icon: Quote,
-          label: "Quote",
-          active: () => editor.isActive("blockquote"),
-          run: () => editor.chain().focus().toggleBlockquote().run(),
-        },
-        {
-          icon: Code,
-          label: "Code block",
-          active: () => editor.isActive("codeBlock"),
-          run: () => editor.chain().focus().toggleCodeBlock().run(),
+          label: "Blocks",
+          tools: [
+            {
+              icon: List,
+              label: "Bullet list",
+              active: () => editor.isActive("bulletList"),
+              run: () => editor.chain().focus().toggleBulletList().run(),
+            },
+            {
+              icon: ListOrdered,
+              label: "Numbered list",
+              active: () => editor.isActive("orderedList"),
+              run: () => editor.chain().focus().toggleOrderedList().run(),
+            },
+            {
+              icon: Quote,
+              label: "Quote",
+              active: () => editor.isActive("blockquote"),
+              run: () => editor.chain().focus().toggleBlockquote().run(),
+            },
+            {
+              icon: Code,
+              label: "Code block (auto)",
+              active: () => editor.isActive("codeBlock"),
+              run: () => editor.chain().focus().toggleCodeBlock().run(),
+            },
+            ...codeLanguages
+              .filter((language) => language.value)
+              .map<Tool>((language) => ({
+                icon: Code,
+                label: language.label,
+                active: () => editor.isActive("codeBlock", { language: language.value }),
+                run: () =>
+                  editor
+                    .chain()
+                    .focus()
+                    .toggleCodeBlock({ language: language.value! })
+                    .run(),
+              })),
+          ],
         },
         {
           icon: AlignLeft,
-          label: "Align left",
-          active: () => editor.isActive({ textAlign: "left" }),
-          run: () => editor.chain().focus().setTextAlign("left").run(),
-        },
-        {
-          icon: AlignCenter,
-          label: "Align center",
-          active: () => editor.isActive({ textAlign: "center" }),
-          run: () => editor.chain().focus().setTextAlign("center").run(),
-        },
-        {
-          icon: AlignRight,
-          label: "Align right",
-          active: () => editor.isActive({ textAlign: "right" }),
-          run: () => editor.chain().focus().setTextAlign("right").run(),
+          label: "Text align",
+          tools: [
+            {
+              icon: AlignLeft,
+              label: "Align left",
+              active: () => editor.isActive({ textAlign: "left" }),
+              run: () => editor.chain().focus().setTextAlign("left").run(),
+            },
+            {
+              icon: AlignCenter,
+              label: "Align center",
+              active: () => editor.isActive({ textAlign: "center" }),
+              run: () => editor.chain().focus().setTextAlign("center").run(),
+            },
+            {
+              icon: AlignRight,
+              label: "Align right",
+              active: () => editor.isActive({ textAlign: "right" }),
+              run: () => editor.chain().focus().setTextAlign("right").run(),
+            },
+            {
+              icon: AlignJustify,
+              label: "Justify",
+              active: () => editor.isActive({ textAlign: "justify" }),
+              run: () => editor.chain().focus().setTextAlign("justify").run(),
+            },
+          ],
         },
         {
           icon: Table2,
-          label: "Insert table",
-          run: () =>
-            editor
-              .chain()
-              .focus()
-              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-              .run(),
+          label: "Table",
+          tools: [
+            {
+              icon: Table2,
+              label: "Insert table",
+              run: () =>
+                editor
+                  .chain()
+                  .focus()
+                  .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                  .run(),
+            },
+            {
+              icon: TableRowsSplit,
+              label: "Add row",
+              run: () => editor.chain().focus().addRowAfter().run(),
+            },
+            {
+              icon: Trash2,
+              label: "Delete row",
+              run: () => editor.chain().focus().deleteRow().run(),
+            },
+            {
+              icon: TableColumnsSplit,
+              label: "Add column",
+              run: () => editor.chain().focus().addColumnAfter().run(),
+            },
+            {
+              icon: Trash2,
+              label: "Delete column",
+              run: () => editor.chain().focus().deleteColumn().run(),
+            },
+            {
+              icon: TableProperties,
+              label: "Toggle header row",
+              run: () => editor.chain().focus().toggleHeaderRow().run(),
+            },
+            {
+              icon: TableCellsMerge,
+              label: "Merge cells",
+              run: () => editor.chain().focus().mergeCells().run(),
+            },
+            {
+              icon: TableCellsSplit,
+              label: "Split cell",
+              run: () => editor.chain().focus().splitCell().run(),
+            },
+            {
+              icon: Trash2,
+              label: "Delete table",
+              run: () => editor.chain().focus().deleteTable().run(),
+            },
+          ],
         },
+        "divider",
         {
-          icon: TableRowsSplit,
-          label: "Add row",
-          run: () => editor.chain().focus().addRowAfter().run(),
-        },
-        {
-          icon: Trash2,
-          label: "Delete row",
-          run: () => editor.chain().focus().deleteRow().run(),
-        },
-        {
-          icon: TableColumnsSplit,
-          label: "Add column",
-          run: () => editor.chain().focus().addColumnAfter().run(),
-        },
-        {
-          icon: Trash2,
-          label: "Delete column",
-          run: () => editor.chain().focus().deleteColumn().run(),
-        },
-        {
-          icon: TableProperties,
-          label: "Toggle header row",
-          run: () => editor.chain().focus().toggleHeaderRow().run(),
-        },
-        {
-          icon: TableCellsMerge,
-          label: "Merge cells",
-          run: () => editor.chain().focus().mergeCells().run(),
-        },
-        {
-          icon: TableCellsSplit,
-          label: "Split cell",
-          run: () => editor.chain().focus().splitCell().run(),
-        },
-        {
-          icon: Trash2,
-          label: "Delete table",
-          run: () => editor.chain().focus().deleteTable().run(),
+          icon: ImagePlus,
+          label: "Add image",
+          run: () => imageInputRef.current?.click(),
         },
       ]
     : [];
@@ -292,6 +393,9 @@ export function NoteEditorPage() {
     <div className="flex h-full min-h-0 flex-col p-8">
       <div className="mb-6 shrink-0 flex items-center justify-between">
         <div>
+          <Button type="button" variant="ghost" onClick={goBack} className="mb-5">
+            <ArrowLeft size={16} /> Back
+          </Button>
           <h2 className="mb-1 text-2xl">{id ? "Edit memory" : "Create a new memory"}</h2>
           <p className="m-0 text-sm text-muted-foreground">
             Keep it useful, not perfect.
@@ -319,24 +423,24 @@ export function NoteEditorPage() {
             placeholder="Memory title"
           />
           <div className="flex flex-wrap items-center gap-1 border-b bg-muted/40 px-4 py-2">
-            {tools.map((tool, index) =>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(event) => {
+                addImages(event.target.files);
+                event.target.value = "";
+              }}
+            />
+            {toolbar.map((tool, index) =>
               tool === "divider" ? (
                 <span key={index} className="mx-1 h-6 w-px bg-border" />
+              ) : "tools" in tool ? (
+                <ToolbarMenu key={tool.label} group={tool} />
               ) : (
-                <Button
-                  key={tool.label}
-                  type="button"
-                  title={tool.label}
-                  variant="ghost"
-                  size="icon"
-                  onClick={tool.run}
-                  className={cn(
-                    "size-8",
-                    tool.active?.() && "bg-accent text-accent-foreground",
-                  )}
-                >
-                  <tool.icon size={16} />
-                </Button>
+                <ToolbarButton key={tool.label} tool={tool} />
               ),
             )}
           </div>
@@ -394,5 +498,59 @@ export function NoteEditorPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function ToolbarButton({ tool }: { tool: Tool }) {
+  const Icon = tool.icon;
+  return (
+    <Button
+      type="button"
+      title={tool.label}
+      variant="ghost"
+      size="icon"
+      onClick={tool.run}
+      className={cn(
+        "size-8",
+        tool.active?.() && "bg-accent text-accent-foreground",
+      )}
+    >
+      <Icon size={16} />
+    </Button>
+  );
+}
+
+function ToolbarMenu({ group }: { group: ToolGroup }) {
+  const Icon = group.icon;
+  const active = group.tools.some((tool) => tool.active?.());
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          title={group.label}
+          variant="ghost"
+          className={cn("h-8 gap-1 px-2", active && "bg-accent text-accent-foreground")}
+        >
+          <Icon size={16} />
+          <ChevronDown size={13} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        {group.tools.map((tool) => {
+          const ToolIcon = tool.icon;
+          return (
+            <DropdownMenuItem
+              key={tool.label}
+              onSelect={tool.run}
+              className={cn(tool.active?.() && "bg-accent text-accent-foreground")}
+            >
+              <ToolIcon size={15} />
+              {tool.label}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

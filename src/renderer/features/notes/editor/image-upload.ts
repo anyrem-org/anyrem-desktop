@@ -7,12 +7,20 @@ export const pasteImages = (editor: Editor, event: ClipboardEvent) => {
   );
   if (!files.length) return false;
   event.preventDefault();
-  void Promise.all(files.map(fileToDataUrl)).then((images) =>
-    Promise.all(
-      images.map((dataUrl, index) =>
-        uploadImage({ dataUrl, name: files[index]?.name ?? "pasted-image" }),
+  void insertImages(editor, files);
+  return true;
+};
+
+export const insertImages = (editor: Editor, files: File[]) =>
+  Promise.all(files.map(fileToDataUrl))
+    .then((images) =>
+      Promise.all(
+        images.map((dataUrl, index) =>
+          uploadImage({ dataUrl, name: files[index]?.name ?? "image" }),
+        ),
       ),
-    ).then((uploads) => {
+    )
+    .then((uploads) => {
       uploads.forEach(({ url }, index) => {
         editor
           .chain()
@@ -20,10 +28,7 @@ export const pasteImages = (editor: Editor, event: ClipboardEvent) => {
           .insertContent({ type: "image", attrs: { src: url, alt: files[index]?.name ?? "" } })
           .run();
       });
-    }),
-  );
-  return true;
-};
+    });
 
 const fileToDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
