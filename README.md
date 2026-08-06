@@ -246,7 +246,7 @@ src/
   renderer/
     app/       # Router, app bootstrap
     layouts/   # AppShell, sidebar, header, activity panel
-    features/  # auth, dashboard, search, notes, categories, graph, settings, quick-access
+    features/  # auth, dashboard, search, notes, categories, settings, quick-access
     shared/    # Shared UI primitives (shadcn-style)
 ```
 

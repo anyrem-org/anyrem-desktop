@@ -21,7 +21,7 @@ Mục tiêu sản phẩm:
 ```txt
 Ghi nhanh mọi thứ trong lúc làm việc.
 Tìm lại như Google.
-Xem nội dung liên quan như knowledge graph.
+Xem nội dung liên quan trong sidebar/list.
 Cuối ngày tự nhắc lại những gì đã ghi.
 ```
 
@@ -62,7 +62,7 @@ content_text   → plain text phục vụ search/index/summary
 content_html   → optional, phục vụ preview/export
 ```
 
-Không nên chỉ lưu HTML vì sau này khó phân tích block, extract keyword, tạo summary, build graph.
+Không nên chỉ lưu HTML vì sau này khó phân tích block, extract keyword, tạo summary.
 
 ---
 
@@ -203,32 +203,6 @@ Product idea
 
 ---
 
-### 2.7. Category graph
-
-Khi click category, user có thể xem graph.
-
-Graph mode:
-
-```txt
-category là node trung tâm
-notes thuộc category là nodes xung quanh
-related notes nối bằng edges
-click node mở preview
-double click note node mở detail modal
-```
-
-Graph không nên làm quá sớm nếu search/note chưa tốt.
-
-Roadmap:
-
-```txt
-Phase 1: related content dạng sidebar/list
-Phase 2: category graph
-Phase 3: note graph + relation types
-```
-
----
-
 ## 3. Suggested tech stack
 
 ### 3.1. Desktop frontend
@@ -245,8 +219,6 @@ TanStack Query
 React Hook Form
 Zod
 Tiptap
-React Flow / @xyflow/react
-ELK.js hoặc dagre
 ```
 
 ### 3.2. Backend
@@ -340,17 +312,6 @@ free core đủ cho MVP
 
 Tiptap table cơ bản dùng được free qua Table/TableKit.
 
-### React Flow
-
-Phù hợp cho graph:
-
-```txt
-category → notes
-note → related notes
-custom node UI
-interactive graph
-```
-
 ---
 
 ## 5. MVP scope
@@ -365,7 +326,7 @@ basic related content
 daily recap Telegram
 ```
 
-Không nên làm graph/AI/offline quá sớm.
+Không nên làm AI/offline quá sớm.
 
 MVP screens:
 
@@ -409,17 +370,7 @@ Better related content
 Category page
 ```
 
-### Phase 3 - Graph
-
-```txt
-Category graph
-Note graph
-Relation types
-Graph filters
-Node preview
-```
-
-### Phase 4 - Offline
+### Phase 3 - Offline
 
 ```txt
 SQLite local cache
@@ -430,7 +381,7 @@ online search ưu tiên Meilisearch
 offline search fallback
 ```
 
-### Phase 5 - AI memory
+### Phase 4 - AI memory
 
 ```txt
 auto summary
@@ -718,7 +669,6 @@ CategoriesModule
 TagsModule
 SearchModule
 RelatedContentModule
-GraphModule
 ActivityModule
 RecapModule
 NotificationModule
@@ -746,14 +696,6 @@ Meilisearch integration
 ```txt
 realtime related via Meilisearch
 future persisted note_relations
-```
-
-### GraphModule
-
-```txt
-category graph
-note graph
-convert DB relation to nodes/edges
 ```
 
 ### RecapModule
@@ -888,21 +830,6 @@ src/
         pages/
           CategoryPage.tsx
 
-      graph/
-        components/
-          KnowledgeGraph.tsx
-          GraphToolbar.tsx
-          GraphNode.tsx
-          GraphPreviewPanel.tsx
-        hooks/
-          useGraphData.ts
-        api/
-          graph.api.ts
-        types/
-          graph.types.ts
-        pages/
-          GraphPage.tsx
-
       recap/
         components/
           DailyRecapCard.tsx
@@ -945,7 +872,6 @@ TanStack Query:
 notes
 search results
 categories
-graph data
 daily recap
 recently active
 ```
@@ -981,7 +907,6 @@ Nên làm:
 ```txt
 features/notes/api/notes.api.ts
 features/search/api/search.api.ts
-features/graph/api/graph.api.ts
 ```
 
 Component dùng hook:
@@ -989,7 +914,6 @@ Component dùng hook:
 ```txt
 useNotes()
 useSearchNotes()
-useGraphData()
 useNoteDetail()
 ```
 
@@ -1020,21 +944,6 @@ export type SearchResult = {
   score?: number;
   updatedAt: string;
 };
-
-export type GraphNode = {
-  id: string;
-  type: 'category' | 'note' | 'tag';
-  label: string;
-  data?: Record<string, unknown>;
-};
-
-export type GraphEdge = {
-  id: string;
-  source: string;
-  target: string;
-  type: 'contains' | 'same_category' | 'similar_content' | 'manual';
-  score?: number;
-};
 ```
 
 Tránh `any` nếu không cần.
@@ -1061,7 +970,6 @@ Home
 Search
 New Note
 Categories
-Graph
 Daily Recap
 Settings
 ```
@@ -1094,7 +1002,6 @@ Home/Search
 Create/Edit Note
 Note Detail
 Category Page
-Graph Page
 Daily Recap
 Settings
 ```
@@ -1125,7 +1032,6 @@ Inspiration direction:
 Google Search simplicity
 Notion clarity
 Linear polish
-Obsidian knowledge graph vibe
 ```
 
 Không copy UI của app tham khảo. Chỉ lấy cấu trúc frame.
@@ -1139,7 +1045,7 @@ Use this prompt when generating UI mockups:
 ```txt
 Design a high-fidelity desktop UI mockup for a knowledge management app called "Remember Anything".
 
-This is an Electron desktop app focused on quick note capture, search-driven recall, related content discovery, category graph exploration, and daily recap.
+This is an Electron desktop app focused on quick note capture, search-driven recall, related content discovery, and daily recap.
 
 Core stack:
 - ElectronJS
@@ -1151,7 +1057,6 @@ Core stack:
 - Zustand
 - TanStack Query
 - Tiptap editor
-- React Flow / @xyflow/react
 - NestJS backend
 - Prisma
 - PostgreSQL
@@ -1192,14 +1097,7 @@ Search result interaction:
 
 Category page:
 - Category title, description, note count
-- Toggle List View / Graph View
-
-Graph view:
-- Category as central node
-- Notes as surrounding nodes
-- Edges connect category to notes and related notes to each other
-- Node preview on click
-- Modern, readable, not too dense
+- Notes list with filters
 
 Daily Recap page:
 - Today’s notes
@@ -1211,7 +1109,7 @@ Daily Recap page:
 Do not generate code.
 Do not copy any reference image directly.
 Use reference images only for layout framing and spacing inspiration.
-Prioritize the Home/Search screen first, then Note Detail Modal and Category Graph as secondary states.
+Prioritize the Home/Search screen first, then Note Detail Modal and Category Page as secondary states.
 ```
 
 ---
@@ -1240,7 +1138,7 @@ Do not copy:
 
 Redesign it into a new desktop UI for "Remember Anything".
 
-Remember Anything is an Electron desktop app for quick note capture, search-driven recall, related content discovery, category graph navigation, and daily recap via Telegram Bot API.
+Remember Anything is an Electron desktop app for quick note capture, search-driven recall, related content discovery, and daily recap via Telegram Bot API.
 
 Required layout:
 - collapsible left sidebar
@@ -1264,7 +1162,6 @@ Left sidebar:
 - Search
 - New Note
 - Categories
-- Graph
 - Daily Recap
 - Settings
 
@@ -1281,12 +1178,6 @@ Top header:
 - quick add note
 - right panel toggle
 - user avatar/settings
-
-Graph requirement:
-- Category node in the center
-- Notes around it
-- Related notes connected by edges
-- Preview on node click
 
 Style:
 - light theme
@@ -1342,7 +1233,6 @@ src/renderer/layouts
 src/renderer/features/notes
 src/renderer/features/search
 src/renderer/features/categories
-src/renderer/features/graph
 src/renderer/features/recap
 src/renderer/features/activity
 src/renderer/features/settings
@@ -1361,8 +1251,7 @@ Prioritize MVP:
 4. Note detail modal
 5. Related content placeholder
 6. Category page
-7. Graph placeholder
-8. Daily recap page placeholder
+7. Daily recap page placeholder
 
 Keep implementation simple and practical.
 Do not over-engineer.
@@ -1377,7 +1266,6 @@ MVP desktop framework: ElectronJS
 Backend: NestJS
 Search: Meilisearch
 Editor: Tiptap
-Graph: React Flow
 Queue: Redis + BullMQ
 Telegram: direct Bot API, no Telegraf
 DB: PostgreSQL + Prisma
@@ -1388,7 +1276,7 @@ Core priority:
 
 ```txt
 Search + quick note capture phải tốt trước.
-Graph, offline, AI là phase sau.
+Offline, AI là phase sau.
 ```
 
 Product priority:
@@ -1422,8 +1310,6 @@ shadcn/ui or Radix UI
 Zustand
 TanStack Query
 Tiptap
-React Flow / @xyflow/react
-ELK.js or dagre
 ```
 
 ### What to implement now
@@ -1442,7 +1328,6 @@ Note detail modal UI
 Open fullscreen note detail page UI
 Create/Edit note page UI
 Category page UI
-Graph page UI using mock data
 Daily Recap page placeholder
 Settings page placeholder
 ```
@@ -1456,7 +1341,6 @@ Example:
 ```txt
 features/notes/api/notes.api.ts
 features/search/api/search.api.ts
-features/graph/api/graph.api.ts
 ```
 
 These API files can return mocked Promise-based data for now.

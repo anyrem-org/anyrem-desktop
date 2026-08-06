@@ -24,7 +24,6 @@ const titles: Record<string, string> = {
   "/": "Home",
   "/search": "Search",
   "/categories": "Categories",
-  "/graph": "Knowledge graph",
   "/settings": "Settings",
   "/notes/new": "New note",
 };

@@ -24,7 +24,6 @@ Avoid useless vanity metrics in MVP:
 - Total notes all time
 - Too many charts
 - Complex analytics
-- Large graph on dashboard
 - AI insights before data quality is good
 
 The dashboard should feel like a “Memory Hub”, not an admin analytics page.

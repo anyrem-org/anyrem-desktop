@@ -20,7 +20,7 @@
   "main": "dist-electron/main/index.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"pnpm:dev:electron\"",
-    "dev:electron": "wait-on tcp:5173 && tsc -p tsconfig.electron.json && electron .",
+    "dev:electron": "wait-on tcp:5173 && tsc -p tsconfig.electron.json && electron . --no-sandbox",
     "build": "tsc -b && vite build && tsc -p tsconfig.electron.json",
     "icons": "node scripts/generate-icons.mjs",
     "predist": "pnpm icons",
@@ -55,7 +55,6 @@
     "@tiptap/extension-underline": "2.26.1",
     "@tiptap/react": "^2.26.1",
     "@tiptap/starter-kit": "^2.26.1",
-    "@xyflow/react": "^12.8.1",
     "axios": "^1.18.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

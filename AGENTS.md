@@ -7,7 +7,7 @@ Read this before making changes.
 
 ## What this project is
 
-**AnyRem / "Remember Anything"** — a desktop app to quickly capture notes while working and recall them fast (Google-like search), with related content and a knowledge graph.
+**AnyRem / "Remember Anything"** — a desktop app to quickly capture notes while working and recall them fast (Google-like search), with related content discovery.
 
 The desktop app talks to the **NestJS backend** in `../anyrem-be` (PostgreSQL, Prisma, Meilisearch, Redis/BullMQ, email/Telegram recap). Do not reintroduce mock API modules or hardcoded sample data in feature code.
 
@@ -21,7 +21,7 @@ Detailed product/engineering spec: `remember-anything-brief.md`. Screen specs: `
 - **React 19 + TypeScript 5 + Vite 6**
 - **Tailwind CSS 3** + Radix / shadcn-style components
 - **Zustand** (UI/local state) + **TanStack Query** (server state)
-- **Tiptap** (rich editor) + **React Flow / @xyflow/react** (graph)
+- **Tiptap** (rich editor)
 - **pnpm 10** (package manager)
 
 ---
@@ -55,7 +55,7 @@ src/
     shared/      # ui primitives, hooks, lib, store, types
 ```
 
-`features/` modules: `auth`, `dashboard`, `search`, `notes`, `categories`, `graph`, `settings`, `quick-access`, `activity`, `avatars`, `uploads`, `recap`.
+`features/` modules: `auth`, `dashboard`, `search`, `notes`, `categories`, `settings`, `quick-access`, `activity`, `avatars`, `uploads`, `recap`.
 
 Each feature typically has: `components/`, `hooks/`, `api/`, `types/`, `pages/`.
 

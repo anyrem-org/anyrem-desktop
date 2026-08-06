@@ -6,7 +6,6 @@ import { TopHeader } from "./TopHeader";
 
 export function AppShell() {
   const { pathname } = useLocation();
-  const immersive = pathname === "/graph";
   const noteDetail = /^\/notes\/[^/]+$/.test(pathname);
   return (
     <div className="flex h-screen overflow-hidden">
@@ -17,7 +16,7 @@ export function AppShell() {
           <main className={noteDetail ? "min-w-0 flex-1 overflow-hidden bg-[#f7f8fc]" : "scrollbar min-w-0 flex-1 overflow-y-auto bg-[#f7f8fc]"}>
             <Outlet />
           </main>
-          {!immersive && !noteDetail && <ActivityPanel />}
+          {!noteDetail && <ActivityPanel />}
         </div>
       </div>
       <NoteDetailModal />

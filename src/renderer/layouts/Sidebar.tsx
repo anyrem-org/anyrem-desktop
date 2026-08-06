@@ -2,7 +2,6 @@ import {
   BookOpen,
   FolderKanban,
   Home,
-  Network,
   Plus,
   Search,
   Settings,
@@ -15,7 +14,6 @@ const items = [
   ["/search", Search, "Search"],
   ["/notes/new", Plus, "New note"],
   ["/categories", FolderKanban, "Categories"],
-  ["/graph", Network, "Graph"],
   ["/settings", Settings, "Settings"],
 ] as const;
 
