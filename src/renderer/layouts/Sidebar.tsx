@@ -1,27 +1,22 @@
-import {
-  BookOpen,
-  FolderKanban,
-  Home,
-  Plus,
-  Search,
-  Settings,
-} from "lucide-react";
-import { NavLink } from "react-router-dom";
-import { useUiStore } from "../shared/store/ui.store";
+import { BookOpen, FolderKanban, Home, Inbox, Plus, Search, Settings } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { useUiStore } from '../shared/store/ui.store';
 
 const items = [
-  ["/", Home, "Home"],
-  ["/search", Search, "Search"],
-  ["/notes/new", Plus, "New note"],
-  ["/categories", FolderKanban, "Categories"],
-  ["/settings", Settings, "Settings"],
+  ['/', Home, 'Home'],
+  ['/inbox', Inbox, 'Inbox'],
+  ['/search', Search, 'Search'],
+  ['/notes/new', Plus, 'New note'],
+  ['/categories', FolderKanban, 'Categories'],
+  ['/settings', Settings, 'Settings'],
 ] as const;
 
 export function Sidebar() {
   const open = useUiStore((state) => state.sidebarOpen);
+
   return (
     <aside
-      className={`${open ? "w-60" : "w-[72px]"} flex shrink-0 flex-col border-r border-slate-200 bg-white px-3 py-4 transition-all`}
+      className={`${open ? 'w-60' : 'w-[72px]'} flex shrink-0 flex-col border-r border-slate-200 bg-white px-3 py-4 transition-all`}
     >
       <div className="mb-7 flex h-10 items-center gap-3 px-2">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
@@ -39,9 +34,9 @@ export function Sidebar() {
           <NavLink
             key={to}
             to={to}
-            end={to === "/"}
+            end={to === '/'}
             className={({ isActive }) =>
-              `flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium ${isActive ? "bg-accent text-accent-foreground" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}`
+              `flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium ${isActive ? 'bg-accent text-accent-foreground' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`
             }
           >
             <Icon size={19} />

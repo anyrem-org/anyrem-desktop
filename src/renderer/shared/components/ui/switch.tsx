@@ -1,5 +1,6 @@
-import * as SwitchPrimitive from "@radix-ui/react-switch";
-import { cn } from "../../lib/utils";
+import * as SwitchPrimitive from '@radix-ui/react-switch';
+import { cn } from '../../lib/utils';
+
 export function Switch({
   className,
   ...props
@@ -7,7 +8,7 @@ export function Switch({
   return (
     <SwitchPrimitive.Root
       className={cn(
-        "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full bg-input transition-colors data-[state=checked]:bg-primary",
+        'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full bg-input transition-colors data-[state=checked]:bg-primary',
         className,
       )}
       {...props}
