@@ -59,12 +59,14 @@ export function MultiSelect({
             variant="outline"
             className="w-full justify-between font-normal text-muted-foreground"
           >
-            {placeholder}
+            <span className="truncate">
+              {selected.length ? `${selected.length} selected` : placeholder}
+            </span>
             <ChevronsUpDown size={15} />
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          side="top"
+          side="bottom"
           avoidCollisions={false}
           className="w-[var(--radix-popover-trigger-width)] p-2"
         >

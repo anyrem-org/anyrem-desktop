@@ -48,7 +48,7 @@ export function TopHeader() {
         <p className="m-0 text-xs text-slate-400">Workspace / Personal</p>
         <h1 className="m-0 text-lg font-semibold">
           {pathname.startsWith("/notes/") && pathname !== "/notes/new"
-            ? "Note detail"
+            ? "Edit memory"
             : (titles[pathname] ?? "AnyRem")}
         </h1>
       </div>

@@ -10,7 +10,6 @@ import { CategoriesPage } from '../features/categories/pages/CategoriesPage';
 import { CategoryDetailPage } from '../features/categories/pages/CategoryDetailPage';
 import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
 import InboxPage from '../features/inbox/pages/InboxPage';
-import { NoteDetailPage } from '../features/notes/pages/NoteDetailPage';
 import { NoteEditorPage } from '../features/notes/pages/NoteEditorPage';
 import { QuickCreatePage } from '../features/quick-access/pages/QuickCreatePage';
 import { QuickSearchPage } from '../features/quick-access/pages/QuickSearchPage';
@@ -49,7 +48,7 @@ export default function App() {
         <Route path="/search" element={<SearchHomePage />} />
         <Route path="/notes/new" element={<NoteEditorPage />} />
         <Route path="/notes/:id/edit" element={<NoteEditorPage />} />
-        <Route path="/notes/:id" element={<NoteDetailPage />} />
+        <Route path="/notes/:id" element={<NoteEditorPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/categories/:id" element={<CategoryDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
