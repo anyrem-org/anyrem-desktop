@@ -1,21 +1,20 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { AppShell } from '../layouts/AppShell';
 import { AuthGuard } from '../features/auth/components/AuthGuard';
+import { useGoogleAuthListener, useSessionBootstrap } from '../features/auth/hooks/useAuth';
+import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
-import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage';
-import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
+import { useAuthStore } from '../features/auth/store/auth.store';
 import { CategoriesPage } from '../features/categories/pages/CategoriesPage';
 import { CategoryDetailPage } from '../features/categories/pages/CategoryDetailPage';
-import { NoteDetailPage } from '../features/notes/pages/NoteDetailPage';
+import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
 import { NoteEditorPage } from '../features/notes/pages/NoteEditorPage';
-import { SearchHomePage } from '../features/search/pages/SearchHomePage';
-import { SettingsPage } from '../features/settings/pages/SettingsPage';
 import { QuickCreatePage } from '../features/quick-access/pages/QuickCreatePage';
 import { QuickSearchPage } from '../features/quick-access/pages/QuickSearchPage';
-import { useSessionBootstrap, useGoogleAuthListener } from '../features/auth/hooks/useAuth';
-import { useAuthStore } from '../features/auth/store/auth.store';
+import { SearchHomePage } from '../features/search/pages/SearchHomePage';
+import { SettingsPage } from '../features/settings/pages/SettingsPage';
+import { AppShell } from '../layouts/AppShell';
 
 export default function App() {
   const navigate = useNavigate();
@@ -47,7 +46,7 @@ export default function App() {
         <Route path="/search" element={<SearchHomePage />} />
         <Route path="/notes/new" element={<NoteEditorPage />} />
         <Route path="/notes/:id/edit" element={<NoteEditorPage />} />
-        <Route path="/notes/:id" element={<NoteDetailPage />} />
+        <Route path="/notes/:id" element={<NoteEditorPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/categories/:id" element={<CategoryDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />

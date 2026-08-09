@@ -10,7 +10,7 @@ import {
 } from '../../../shared/components/ui/dialog';
 import { getApiErrorMessage } from '../../../shared/lib/api-client';
 import { useUiStore } from '../../../shared/store/ui.store';
-import { NoteContent } from './NoteContent';
+import { BlockNoteEditor, type NoteBlocks } from './BlockNoteEditor';
 import { useGetNote, useGetNotes } from '../hooks/useNotes';
 
 export function NoteDetailModal() {
@@ -52,22 +52,21 @@ function NoteDetailModalBody({ id, close }: { id: string; close: () => void }) {
                 </span>
                 <Button asChild className="ml-auto shrink-0">
                   <Link onClick={close} to={`/notes/${note.id}`} className="no-underline">
-                    View detail <ExternalLink size={15} />
+                    Open memory <ExternalLink size={15} />
                   </Link>
                 </Button>
               </div>
               <DialogTitle className="mb-2 mt-4 text-3xl leading-tight">{note.title}</DialogTitle>
               <DialogDescription>Updated {note.updatedAt}</DialogDescription>
             </div>
-            <NoteContent
-              html={note.contentHtml}
-              searchQuery=""
-              activeIndex={0}
-              onMatchCountChange={() => {}}
-              onActiveIndexChange={() => {}}
-              onWideTableChange={() => {}}
-              inline
-              chrome={false}
+            <BlockNoteEditor
+              initialBlocks={
+                note.editorFormat === 'BLOCKNOTE' && Array.isArray(note.contentJson)
+                  ? (note.contentJson as NoteBlocks)
+                  : undefined
+              }
+              legacyHtml={note.editorFormat === 'TIPTAP' ? note.contentHtml : undefined}
+              editable={false}
             />
           </>
         )}
