@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write Release Notes"
+  short_description: "Draft verified release notes in English"
+  default_prompt: "Use $write-release-notes to draft English release notes for the current version."
