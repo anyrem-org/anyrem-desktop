@@ -13,11 +13,11 @@ export function RadioGroup() {
     >
       <div className="flex items-center">
         <RadioGroupItem
-          className="size-[20px] cursor-default rounded-full bg-white shadow-[0_2px_10px] shadow-blackA4 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px] focus:shadow-black"
+          className="grid size-5 cursor-pointer place-items-center rounded-full border border-input bg-background outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=checked]:border-primary data-[state=checked]:bg-primary"
           value="default"
           id="r1"
         >
-          <RadioGroupIndicator className="relative flex size-full items-center justify-center after:block after:size-[11px] after:rounded-full after:bg-violet11" />
+          <RadioGroupIndicator className="flex size-full items-center justify-center after:block after:size-2 after:rounded-full after:bg-primary-foreground" />
         </RadioGroupItem>
         {/* <label className="pl-[15px] text-[15px] leading-none text-white" htmlFor="r1">
           Default
