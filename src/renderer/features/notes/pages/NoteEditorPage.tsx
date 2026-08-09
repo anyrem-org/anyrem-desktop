@@ -44,12 +44,11 @@ export function NoteEditorPage() {
       categoryIds,
       relatedIds,
     };
-    const onSuccess = (note: { id: string }) => navigate(`/notes/${note.id}`);
+    const onSuccess = (note: { id: string }) => {};
     if (id) update.mutate({ id, input }, { onSuccess });
     else create.mutate(input, { onSuccess });
   };
-  const goBack = () =>
-    window.history.length > 1 ? navigate(-1) : navigate('/search');
+  const goBack = () => (window.history.length > 1 ? navigate(-1) : navigate('/search'));
   const mutation = id ? update : create;
 
   return (
