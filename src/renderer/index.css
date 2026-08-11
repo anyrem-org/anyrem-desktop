@@ -39,9 +39,11 @@
     border-color: hsl(var(--border));
   }
 }
+
 * {
   box-sizing: border-box;
 }
+
 html,
 body,
 #root {
@@ -49,14 +51,12 @@ body,
   height: 100%;
   overflow: hidden;
 }
+
 body {
   margin: 0;
   min-width: 0;
 }
-button,
-input {
-  font: inherit;
-}
+
 button {
   cursor: pointer;
 }
