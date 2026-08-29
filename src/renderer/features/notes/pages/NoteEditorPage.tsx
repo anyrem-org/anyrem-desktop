@@ -5,6 +5,7 @@ import { ErrorMessage } from '../../../shared/components/ErrorMessage';
 import { MultiSelect } from '../../../shared/components/MultiSelect';
 import { Button } from '../../../shared/components/ui/button';
 import { Label } from '../../../shared/components/ui/label';
+import { Switch } from '../../../shared/components/ui/switch';
 import { getApiErrorMessage } from '../../../shared/lib/api-client';
 import { useUiStore } from '../../../shared/store/ui.store';
 import { CategoryFormDialog } from '../../categories/components/CategoryFormDialog';
@@ -19,6 +20,7 @@ export function NoteEditorPage() {
   const [blocks, setBlocks] = useState<NoteBlocks>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [relatedIds, setRelatedIds] = useState<string[]>([]);
+  const [showInGlobalSearch, setShowInGlobalSearch] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(true);
   const existing = useGetNote(id);
   const categories = useGetCategories();
@@ -34,6 +36,7 @@ export function NoteEditorPage() {
     if (!existing.data) return;
     setCategoryIds(existing.data.categoryIds);
     setRelatedIds(existing.data.relatedIds);
+    setShowInGlobalSearch(existing.data.showInGlobalSearch ?? true);
   }, [existing.data]);
 
   const save = () => {
@@ -44,6 +47,7 @@ export function NoteEditorPage() {
       editorFormat: 'BLOCKNOTE' as const,
       categoryIds,
       relatedIds,
+      showInGlobalSearch,
     };
 
     if (id) {
@@ -58,6 +62,12 @@ export function NoteEditorPage() {
   };
   const goBack = () => (window.history.length > 1 ? navigate(-1) : navigate('/search'));
   const mutation = id ? update : create;
+  const hiddenByCategory =
+    existing.data?.effectiveShowInGlobalSearch === false &&
+    (existing.data.showInGlobalSearch ?? true);
+  const hiddenCategoryNames = (categories.data ?? [])
+    .filter((category) => categoryIds.includes(category.id) && !category.showInGlobalSearch)
+    .map((category) => category.name);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white">
@@ -117,6 +127,26 @@ export function NoteEditorPage() {
               </p>
             </div>
             <div className="scrollbar flex-1 space-y-5 overflow-y-auto p-5">
+              <section className="rounded-xl border p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="note-show-in-global-search">Show in global search</Label>
+                    <p className="m-0 text-xs text-muted-foreground">
+                      You can still find this memory when searching inside its category.
+                    </p>
+                  </div>
+                  <Switch
+                    id="note-show-in-global-search"
+                    checked={showInGlobalSearch}
+                    onCheckedChange={setShowInGlobalSearch}
+                  />
+                </div>
+                {hiddenByCategory && hiddenCategoryNames.length > 0 && (
+                  <p className="mb-0 mt-3 text-xs text-amber-700">
+                    Hidden from global search because {hiddenCategoryNames.join(', ')} is excluded.
+                  </p>
+                )}
+              </section>
               <section className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs">Categories</Label>

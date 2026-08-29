@@ -32,6 +32,7 @@ export type Category = {
   color: string;
   icon: CategoryIcon;
   noteCount: number;
+  showInGlobalSearch: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -65,5 +66,6 @@ export type CreateCategoryInput = {
   description?: string;
   color: string;
   icon?: CategoryIcon;
+  showInGlobalSearch?: boolean;
 };
 export type UpdateCategoryInput = Partial<CreateCategoryInput>;
