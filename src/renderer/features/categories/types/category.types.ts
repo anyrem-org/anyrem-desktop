@@ -1,8 +1,63 @@
-export const categoryIconNames = ["Bell", "BookOpen", "Brain", "Briefcase", "CalendarDays", "Code2", "Database", "FileText", "Folder", "Heart", "Home", "Image", "Lightbulb", "MessageSquare", "Music", "Palette", "Rocket", "Search", "Shield", "Star", "Tag", "Target", "Wrench", "Zap"] as const;
+export const categoryIconNames = [
+  'Bell',
+  'BookOpen',
+  'Brain',
+  'Briefcase',
+  'CalendarDays',
+  'Code2',
+  'Database',
+  'FileText',
+  'Folder',
+  'Heart',
+  'Home',
+  'Image',
+  'Lightbulb',
+  'MessageSquare',
+  'Music',
+  'Palette',
+  'Rocket',
+  'Search',
+  'Shield',
+  'Star',
+  'Tag',
+  'Target',
+  'Wrench',
+  'Zap',
+] as const;
 export type CategoryIcon = (typeof categoryIconNames)[number];
-export type Category = { id: string; name: string; description: string; color: string; icon: CategoryIcon; noteCount: number };
-export type CategoryNoteSummary = { id: string; title: string; contentText: string; pinned: boolean; updatedAt: string };
+export type Category = {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  icon: CategoryIcon;
+  noteCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+export type CategorySort = 'updated_desc' | 'updated_asc' | 'note_count_desc' | 'note_count_asc';
+export type CategoryNoteSummary = {
+  id: string;
+  title: string;
+  contentText: string;
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 export type CategoryDetail = Category;
-export type CategoryNoteFilters = { page: number; limit?: number; q?: string; pinned?: boolean; from?: string; to?: string; sort?: "updated_desc" | "created_desc" | "title_asc" };
-export type CreateCategoryInput = { name: string; description?: string; color: string; icon?: CategoryIcon };
+export type CategoryNoteFilters = {
+  page: number;
+  limit?: number;
+  q?: string;
+  pinned?: boolean;
+  from?: string;
+  to?: string;
+  sort?: 'updated_desc' | 'created_desc' | 'title_asc';
+};
+export type CreateCategoryInput = {
+  name: string;
+  description?: string;
+  color: string;
+  icon?: CategoryIcon;
+};
 export type UpdateCategoryInput = Partial<CreateCategoryInput>;

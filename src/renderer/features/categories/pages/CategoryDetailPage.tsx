@@ -18,19 +18,28 @@ import {
 import { getApiErrorMessage } from '../../../shared/lib/api-client';
 import { CategoryFormDialog } from '../components/CategoryFormDialog';
 import { CategoryIcon } from '../components/CategoryIcon';
+import { CategoryNoteList } from '../components/CategoryNoteList';
+import { CategoryViewToggle } from '../components/CategoryViewToggle';
 import { useDeleteCategory, useGetCategory, useGetCategoryNotes } from '../hooks/useCategories';
+import { useCategoryView, useUpdateCategoryView } from '../hooks/useCategoryView';
 import type { CategoryNoteFilters } from '../types/category.types';
 
 export function CategoryDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
   const [pinned, setPinned] = useState('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [sort, setSort] = useState<NonNullable<CategoryNoteFilters['sort']>>('updated_desc');
+
   const deferredQuery = useDeferredValue(query);
+  const categoryView = useCategoryView('detail');
+  const updateCategoryView = useUpdateCategoryView('detail');
+  const view = categoryView.data ?? 'card';
+
   const category = useGetCategory(id);
   const filters: CategoryNoteFilters = {
     page,
@@ -41,13 +50,28 @@ export function CategoryDetailPage() {
     to: to ? new Date(`${to}T23:59:59.999`).toISOString() : undefined,
     sort,
   };
+
   const notes = useGetCategoryNotes(id, filters);
   const remove = useDeleteCategory();
-  const goBack = () => (window.history.length > 1 ? navigate(-1) : navigate('/categories'));
-  useEffect(() => setPage(1), [deferredQuery, pinned, from, to, sort]);
-  if (category.isPending)
+
+  function goBack() {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate('/categories');
+  }
+
+  useEffect(() => {
+    setPage(1);
+  }, [deferredQuery, pinned, from, to, sort]);
+
+  if (category.isPending) {
     return <div className="p-8 text-sm text-muted-foreground">Loading category…</div>;
-  if (category.isError)
+  }
+
+  if (category.isError) {
     return (
       <div className="p-8">
         <ErrorMessage message={getApiErrorMessage(category.error)} className="mb-4" />
@@ -56,7 +80,10 @@ export function CategoryDetailPage() {
         </Button>
       </div>
     );
+  }
+
   const item = category.data;
+
   return (
     <div className="mx-auto max-w-7xl p-8">
       <Button type="button" variant="ghost" onClick={goBack} className="mb-5">
@@ -93,11 +120,13 @@ export function CategoryDetailPage() {
             description="This category can only be deleted when no memories use it. Memories are never deleted."
             confirmLabel="Delete category"
             pending={remove.isPending}
-            onConfirm={() =>
+            onConfirm={() => {
               remove.mutate(item.id, {
-                onSuccess: () => navigate('/categories', { replace: true }),
-              })
-            }
+                onSuccess: () => {
+                  navigate('/categories', { replace: true });
+                },
+              });
+            }}
             trigger={
               <Button variant="destructive" disabled={remove.isPending}>
                 <Trash2 size={15} /> Delete
@@ -106,14 +135,17 @@ export function CategoryDetailPage() {
           />
         </div>
       </div>
-      <div className="mb-5 grid grid-cols-[minmax(220px,1fr)_140px_150px_150px_170px] gap-2">
+      <div className="mb-5 flex flex-wrap gap-2">
         <Input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+          }}
           placeholder="Filter memories…"
+          className="min-w-56 flex-1"
         />
         <Select value={pinned} onValueChange={setPinned}>
-          <SelectTrigger>
+          <SelectTrigger className="w-35">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -125,25 +157,44 @@ export function CategoryDetailPage() {
         <Input
           type="date"
           value={from}
-          onChange={(event) => setFrom(event.target.value)}
+          onChange={(event) => {
+            setFrom(event.target.value);
+          }}
           aria-label="Created from"
+          className="w-37.5"
         />
         <Input
           type="date"
           value={to}
-          onChange={(event) => setTo(event.target.value)}
+          onChange={(event) => {
+            setTo(event.target.value);
+          }}
           aria-label="Created to"
+          className="w-37.5"
         />
-        <Select value={sort} onValueChange={(value) => setSort(value as typeof sort)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="updated_desc">Recently updated</SelectItem>
-            <SelectItem value="created_desc">Recently created</SelectItem>
-            <SelectItem value="title_asc">Title A–Z</SelectItem>
-          </SelectContent>
-        </Select>
+        {view === 'card' && (
+          <Select
+            value={sort}
+            onValueChange={(value) => {
+              setSort(value as typeof sort);
+            }}
+          >
+            <SelectTrigger className="w-42.5">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="updated_desc">Recently updated</SelectItem>
+              <SelectItem value="created_desc">Recently created</SelectItem>
+              <SelectItem value="title_asc">Title A–Z</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+        <CategoryViewToggle
+          view={view}
+          onViewChange={(value) => {
+            updateCategoryView.mutate(value);
+          }}
+        />
       </div>
       {notes.isPending ? (
         <div className="p-8 text-center text-sm text-muted-foreground">Loading memories…</div>
@@ -151,28 +202,34 @@ export function CategoryDetailPage() {
         <ErrorMessage message={getApiErrorMessage(notes.error)} className="p-5" />
       ) : notes.data.items.length ? (
         <>
-          <div className="grid grid-cols-2 gap-4">
-            {notes.data.items.map((note) => (
-              <Link key={note.id} to={`/notes/${note.id}`} className="no-underline">
-                <Card className="h-42 transition hover:border-primary/30 hover:shadow-sm">
-                  <CardContent className="flex h-full flex-col p-5">
-                    <div className="flex items-start gap-2">
-                      <h3 className="m-0 flex-1 text-sm text-foreground">{note.title}</h3>
-                      {note.pinned && <Pin size={14} className="text-primary" />}
-                    </div>
-                    <p className="mt-2 flex-1 line-clamp-3 text-sm leading-6 text-muted-foreground">
-                      {note.contentText}
-                    </p>
-                    <div className="mt-3 flex justify-end">
-                      <span className="text-xs italic text-muted-foreground">
-                        Updated {new Date(note.updatedAt).toLocaleString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          {view === 'list' ? (
+            <CategoryNoteList notes={notes.data.items} sort={sort} onSortChange={setSort} />
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {notes.data.items.map((note) => {
+                return (
+                  <Link key={note.id} to={`/notes/${note.id}`} className="no-underline">
+                    <Card className="h-42 transition hover:border-primary/30 hover:shadow-sm">
+                      <CardContent className="flex h-full flex-col p-5">
+                        <div className="flex items-start gap-2">
+                          <h3 className="m-0 flex-1 text-sm text-foreground">{note.title}</h3>
+                          {note.pinned && <Pin size={14} className="text-primary" />}
+                        </div>
+                        <p className="mt-2 flex-1 line-clamp-3 text-sm leading-6 text-muted-foreground">
+                          {note.contentText}
+                        </p>
+                        <div className="mt-3 flex justify-end">
+                          <span className="text-xs italic text-muted-foreground">
+                            Updated {new Date(note.updatedAt).toLocaleString()}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
           <Pagination
             page={notes.data.page}
             totalPages={notes.data.totalPages}

@@ -1,37 +1,34 @@
-import { Bell, Database, Keyboard, Monitor, Search } from "lucide-react";
-import { useEffect, useState } from "react";
-import { AvatarPicker } from "../../avatars/components/AvatarPicker";
-import { useSelectAvatar } from "../../avatars/hooks/useAvatars";
-import type { AvatarOption } from "../../avatars/api/avatars.api";
-import { useAuthStore } from "../../auth/store/auth.store";
-import { ErrorMessage } from "../../../shared/components/ErrorMessage";
-import { Button } from "../../../shared/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "../../../shared/components/ui/card";
+import { Bell, Database, Keyboard, Monitor, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AvatarPicker } from '../../avatars/components/AvatarPicker';
+import { useSelectAvatar } from '../../avatars/hooks/useAvatars';
+import type { AvatarOption } from '../../avatars/api/avatars.api';
+import { useAuthStore } from '../../auth/store/auth.store';
+import { ErrorMessage } from '../../../shared/components/ErrorMessage';
+import { Button } from '../../../shared/components/ui/button';
+import { Card, CardContent, CardHeader } from '../../../shared/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../../../shared/components/ui/dialog";
-import { Input } from "../../../shared/components/ui/input";
-import { Label } from "../../../shared/components/ui/label";
+} from '../../../shared/components/ui/dialog';
+import { Input } from '../../../shared/components/ui/input';
+import { Label } from '../../../shared/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../shared/components/ui/select";
-import { Switch } from "../../../shared/components/ui/switch";
-import { getApiErrorMessage } from "../../../shared/lib/api-client";
-import { useUiStore } from "../../../shared/store/ui.store";
-import { useClearSearchHistory } from "../../search/hooks/useSearch";
-import type { Theme } from "../api/settings.api";
+} from '../../../shared/components/ui/select';
+import { Switch } from '../../../shared/components/ui/switch';
+import { getApiErrorMessage } from '../../../shared/lib/api-client';
+import { useUiStore } from '../../../shared/store/ui.store';
+import { useClearSearchHistory } from '../../search/hooks/useSearch';
+import type { Theme } from '../api/settings.api';
+import { useCategoryView, useUpdateCategoryView } from '../../categories/hooks/useCategoryView';
 import {
   useConfigureTelegram,
   useRemoveTelegram,
@@ -39,9 +36,9 @@ import {
   useTestRecap,
   useTestTelegram,
   useUpdateSettings,
-} from "../hooks/useSettings";
-import type { RecapProvider } from "../../recap/api/recap.api";
-import { AppUpdatesCard } from "../components/AppUpdatesCard";
+} from '../hooks/useSettings';
+import type { RecapProvider } from '../../recap/api/recap.api';
+import { AppUpdatesCard } from '../components/AppUpdatesCard';
 
 function SettingRow({
   title,
@@ -56,16 +53,14 @@ function SettingRow({
     <div className="flex items-center justify-between gap-5 border-t py-4 first:border-0 first:pt-0 last:pb-0">
       <div>
         <Label>{title}</Label>
-        <p className="mb-0 mt-1 text-xs text-muted-foreground">
-          {description}
-        </p>
+        <p className="mb-0 mt-1 text-xs text-muted-foreground">{description}</p>
       </div>
       {children}
     </div>
   );
 }
 
-type ShortcutName = "search" | "create";
+type ShortcutName = 'search' | 'create';
 type ShortcutPayload = {
   shortcuts: Record<ShortcutName, string>;
   registered: Record<ShortcutName, boolean>;
@@ -73,44 +68,43 @@ type ShortcutPayload = {
 
 const defaultShortcuts: ShortcutPayload = {
   shortcuts: {
-    search: "CommandOrControl+Alt+Space",
-    create: "CommandOrControl+Alt+N",
+    search: 'CommandOrControl+Alt+Space',
+    create: 'CommandOrControl+Alt+N',
   },
   registered: { search: true, create: true },
 };
 
 const timezones = [
-  ["Asia/Ho_Chi_Minh", "Vietnam"],
-  ["Asia/Tokyo", "Japan"],
-  ["Asia/Seoul", "Korea"],
-  ["Asia/Singapore", "Singapore"],
-  ["Asia/Bangkok", "Thailand"],
-  ["Asia/Jakarta", "Indonesia"],
-  ["Asia/Manila", "Philippines"],
-  ["Asia/Kuala_Lumpur", "Malaysia"],
-  ["Australia/Sydney", "Australia"],
-  ["Europe/London", "United Kingdom"],
-  ["Europe/Berlin", "Germany"],
-  ["America/Los_Angeles", "US Pacific"],
-  ["America/New_York", "US Eastern"],
+  ['Asia/Ho_Chi_Minh', 'Vietnam'],
+  ['Asia/Tokyo', 'Japan'],
+  ['Asia/Seoul', 'Korea'],
+  ['Asia/Singapore', 'Singapore'],
+  ['Asia/Bangkok', 'Thailand'],
+  ['Asia/Jakarta', 'Indonesia'],
+  ['Asia/Manila', 'Philippines'],
+  ['Asia/Kuala_Lumpur', 'Malaysia'],
+  ['Australia/Sydney', 'Australia'],
+  ['Europe/London', 'United Kingdom'],
+  ['Europe/Berlin', 'Germany'],
+  ['America/Los_Angeles', 'US Pacific'],
+  ['America/New_York', 'US Eastern'],
 ] as const;
 
 const timezoneOffset = (timeZone: string) =>
-  new Intl.DateTimeFormat("en", {
+  new Intl.DateTimeFormat('en', {
     timeZone,
-    timeZoneName: "shortOffset",
+    timeZoneName: 'shortOffset',
   })
     .formatToParts(new Date())
-    .find((part) => part.type === "timeZoneName")
-    ?.value.replace("GMT", "UTC") ?? timeZone;
+    .find((part) => part.type === 'timeZoneName')
+    ?.value.replace('GMT', 'UTC') ?? timeZone;
 
 const timezoneLabel = (value: string, label: string) =>
   `${label} - ${value} - ${timezoneOffset(value)}`;
 
-const platform = () =>
-  (window.desktop?.platform ?? navigator.platform).toLowerCase();
-const isMac = () => platform().includes("mac");
-const isLinux = () => platform().includes("linux");
+const platform = () => (window.desktop?.platform ?? navigator.platform).toLowerCase();
+const isMac = () => platform().includes('mac');
+const isLinux = () => platform().includes('linux');
 
 // Map a KeyboardEvent.code to an Electron accelerator key token.
 // Using `code` (physical key) avoids layout/locale issues from `event.key`.
@@ -120,32 +114,32 @@ const codeToAcceleratorKey = (code: string): string | null => {
   if (/^Numpad[0-9]$/.test(code)) return `num${code.slice(6)}`;
   if (/^F[0-9]{1,2}$/.test(code)) return code;
   const named: Record<string, string> = {
-    Space: "Space",
-    Enter: "Return",
-    NumpadEnter: "Return",
-    Tab: "Tab",
-    Backspace: "Backspace",
-    Delete: "Delete",
-    Insert: "Insert",
-    Home: "Home",
-    End: "End",
-    PageUp: "PageUp",
-    PageDown: "PageDown",
-    ArrowUp: "Up",
-    ArrowDown: "Down",
-    ArrowLeft: "Left",
-    ArrowRight: "Right",
-    Minus: "-",
-    Equal: "=",
-    BracketLeft: "[",
-    BracketRight: "]",
-    Backslash: "\\",
-    Semicolon: ";",
+    Space: 'Space',
+    Enter: 'Return',
+    NumpadEnter: 'Return',
+    Tab: 'Tab',
+    Backspace: 'Backspace',
+    Delete: 'Delete',
+    Insert: 'Insert',
+    Home: 'Home',
+    End: 'End',
+    PageUp: 'PageUp',
+    PageDown: 'PageDown',
+    ArrowUp: 'Up',
+    ArrowDown: 'Down',
+    ArrowLeft: 'Left',
+    ArrowRight: 'Right',
+    Minus: '-',
+    Equal: '=',
+    BracketLeft: '[',
+    BracketRight: ']',
+    Backslash: '\\',
+    Semicolon: ';',
     Quote: "'",
-    Comma: ",",
-    Period: ".",
-    Slash: "/",
-    Backquote: "`",
+    Comma: ',',
+    Period: '.',
+    Slash: '/',
+    Backquote: '`',
   };
   return named[code] ?? null;
 };
@@ -155,34 +149,34 @@ type Modifiers = { ctrl: boolean; alt: boolean; shift: boolean; meta: boolean };
 // Modifier tokens in a stable order. meta -> Command (mac) / Super (Win/Linux).
 const modifierTokens = (mods: Modifiers): string[] => {
   const tokens: string[] = [];
-  if (mods.meta) tokens.push(isMac() ? "Command" : "Super");
-  if (mods.ctrl) tokens.push("Control");
-  if (mods.alt) tokens.push("Alt");
-  if (mods.shift) tokens.push("Shift");
+  if (mods.meta) tokens.push(isMac() ? 'Command' : 'Super');
+  if (mods.ctrl) tokens.push('Control');
+  if (mods.alt) tokens.push('Alt');
+  if (mods.shift) tokens.push('Shift');
   return tokens;
 };
 
 // A primary modifier (Ctrl/Alt/Cmd/Super) is required; Shift alone is invalid.
 const buildAccelerator = (mods: Modifiers, key: string | null): string | null => {
   if (!key || !(mods.ctrl || mods.alt || mods.meta)) return null;
-  return [...modifierTokens(mods), key].join("+");
+  return [...modifierTokens(mods), key].join('+');
 };
 
 const modifierLabel = (token: string): string => {
   const mac = isMac();
   switch (token) {
-    case "CommandOrControl": // legacy stored value
-      return mac ? "\u2318" : "Ctrl";
-    case "Command":
-      return mac ? "\u2318" : "Cmd";
-    case "Super":
-      return mac ? "\u2318" : "Super";
-    case "Control":
-      return mac ? "\u2303" : "Ctrl";
-    case "Alt":
-      return mac ? "\u2325" : "Alt";
-    case "Shift":
-      return mac ? "\u21e7" : "Shift";
+    case 'CommandOrControl': // legacy stored value
+      return mac ? '\u2318' : 'Ctrl';
+    case 'Command':
+      return mac ? '\u2318' : 'Cmd';
+    case 'Super':
+      return mac ? '\u2318' : 'Super';
+    case 'Control':
+      return mac ? '\u2303' : 'Ctrl';
+    case 'Alt':
+      return mac ? '\u2325' : 'Alt';
+    case 'Shift':
+      return mac ? '\u21e7' : 'Shift';
     default:
       return token;
   }
@@ -190,26 +184,24 @@ const modifierLabel = (token: string): string => {
 
 const displayShortcut = (accelerator: string): string =>
   accelerator
-    .split("+")
+    .split('+')
     .map(modifierLabel)
-    .join(isMac() ? " " : " + ");
+    .join(isMac() ? ' ' : ' + ');
 
 function ShortcutStatus({ active }: { active: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 text-[11px] ${active ? "text-emerald-600" : "text-amber-600"}`}
+      className={`inline-flex items-center gap-1 text-[11px] ${active ? 'text-emerald-600' : 'text-amber-600'}`}
       title={
         active
-          ? "This shortcut is active and works in the background."
+          ? 'This shortcut is active and works in the background.'
           : isLinux()
-            ? "Not active in the background. Linux/Wayland restricts global shortcuts; it still works while the app is focused."
-            : "Saved, but not active. The combo may be in use by another app."
+            ? 'Not active in the background. Linux/Wayland restricts global shortcuts; it still works while the app is focused.'
+            : 'Saved, but not active. The combo may be in use by another app.'
       }
     >
-      <span
-        className={`size-1.5 rounded-full ${active ? "bg-emerald-500" : "bg-amber-500"}`}
-      />
-      {active ? "Active" : "Not active"}
+      <span className={`size-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+      {active ? 'Active' : 'Not active'}
     </span>
   );
 }
@@ -227,15 +219,19 @@ export function SettingsPage() {
   const selectAvatar = useSelectAvatar();
   const data = settings.data;
   const [shortcuts, setShortcuts] = useState(defaultShortcuts);
-  const [shortcutError, setShortcutError] = useState("");
-  const [shortcutNotice, setShortcutNotice] = useState("");
+  const [shortcutError, setShortcutError] = useState('');
+  const [shortcutNotice, setShortcutNotice] = useState('');
   const [recordingShortcut, setRecordingShortcut] = useState<ShortcutName | null>(null);
-  const [pendingShortcut, setPendingShortcut] = useState("");
-  const [livePreview, setLivePreview] = useState("");
+  const [pendingShortcut, setPendingShortcut] = useState('');
+  const [livePreview, setLivePreview] = useState('');
   const [saving, setSaving] = useState(false);
-  const [botToken, setBotToken] = useState("");
-  const [chatId, setChatId] = useState("");
-  const [testRecapProvider, setTestRecapProvider] = useState<RecapProvider>("EMAIL");
+  const [botToken, setBotToken] = useState('');
+  const [chatId, setChatId] = useState('');
+  const [testRecapProvider, setTestRecapProvider] = useState<RecapProvider>('EMAIL');
+  const categoryView = useCategoryView();
+  const updateCategoryView = useUpdateCategoryView();
+  const categoryDetailView = useCategoryView('detail');
+  const updateCategoryDetailView = useUpdateCategoryView('detail');
 
   useEffect(() => {
     if (!data) return;
@@ -243,33 +239,51 @@ export function SettingsPage() {
   }, [data, setActivityOpen]);
 
   useEffect(() => {
-    window.desktop?.getShortcuts().then(setShortcuts).catch(() => {});
+    window.desktop
+      ?.getShortcuts()
+      .then(setShortcuts)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!data?.quick_access.shortcuts) return;
     (async () => {
-      const search = await window.desktop?.setShortcut("search", data.quick_access.shortcuts.search);
-      const create = await window.desktop?.setShortcut("create", data.quick_access.shortcuts.create);
-      setShortcuts(create ?? search ?? { shortcuts: data.quick_access.shortcuts, registered: { search: false, create: false } });
+      const search = await window.desktop?.setShortcut(
+        'search',
+        data.quick_access.shortcuts.search,
+      );
+      const create = await window.desktop?.setShortcut(
+        'create',
+        data.quick_access.shortcuts.create,
+      );
+      setShortcuts(
+        create ??
+          search ?? {
+            shortcuts: data.quick_access.shortcuts,
+            registered: { search: false, create: false },
+          },
+      );
     })();
   }, [data?.quick_access.shortcuts]);
 
-  const save = (type: "appearance" | "search" | "recap" | "regional", key: string, value: string | boolean) =>
-    update.mutate([{ type, key, value }]);
+  const save = (
+    type: 'appearance' | 'search' | 'recap' | 'regional',
+    key: string,
+    value: string | boolean,
+  ) => update.mutate([{ type, key, value }]);
 
   const openRecorder = (name: ShortcutName) => {
-    setShortcutError("");
-    setShortcutNotice("");
-    setPendingShortcut("");
-    setLivePreview("");
+    setShortcutError('');
+    setShortcutNotice('');
+    setPendingShortcut('');
+    setLivePreview('');
     setRecordingShortcut(name);
   };
 
   const closeRecorder = () => {
     setRecordingShortcut(null);
-    setPendingShortcut("");
-    setLivePreview("");
+    setPendingShortcut('');
+    setLivePreview('');
   };
 
   const saveShortcut = async (name: ShortcutName, accelerator: string) => {
@@ -277,13 +291,13 @@ export function SettingsPage() {
     try {
       const result = await window.desktop?.setShortcut(name, accelerator);
       if (!result) {
-        setShortcutError("Shortcuts are only available in the desktop app.");
+        setShortcutError('Shortcuts are only available in the desktop app.');
         return;
       }
       setShortcuts(result);
       if (result.ok) {
         await update.mutateAsync([
-          { type: "quick_access", key: "shortcuts", value: result.shortcuts },
+          { type: 'quick_access', key: 'shortcuts', value: result.shortcuts },
         ]);
         // Wayland: saved, but the OS portal may confirm the binding later
         // (and can ask you to approve it). Show a soft note, not an error.
@@ -292,18 +306,18 @@ export function SettingsPage() {
         setShortcutNotice(
           result.pending && !result.registered[name]
             ? "Saved, but Linux/Wayland doesn't let apps register global shortcuts here, so it won't trigger in the background. It works while the app window is focused."
-            : "",
+            : '',
         );
         closeRecorder();
       } else {
-        const superHint = accelerator.includes("Super")
-          ? " The Super/Windows key is often reserved by the desktop; try Ctrl or Alt instead."
-          : "";
+        const superHint = accelerator.includes('Super')
+          ? ' The Super/Windows key is often reserved by the desktop; try Ctrl or Alt instead.'
+          : '';
         setShortcutError(
           `${displayShortcut(accelerator)} is already used by the system or another app.${superHint} Try a different combination.`,
         );
-        setPendingShortcut("");
-        setLivePreview("");
+        setPendingShortcut('');
+        setLivePreview('');
       }
     } finally {
       setSaving(false);
@@ -311,17 +325,17 @@ export function SettingsPage() {
   };
 
   const captureShortcut = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key === "Tab") return; // allow focus to leave the field
+    if (event.key === 'Tab') return; // allow focus to leave the field
     event.preventDefault();
 
-    if (event.key === "Escape") {
+    if (event.key === 'Escape') {
       closeRecorder();
       return;
     }
 
     // Plain Enter confirms the captured combo (like clicking Save).
     if (
-      event.key === "Enter" &&
+      event.key === 'Enter' &&
       !event.ctrlKey &&
       !event.altKey &&
       !event.metaKey &&
@@ -343,8 +357,7 @@ export function SettingsPage() {
       meta: event.metaKey || metaByCode,
     };
     const isModifierKey =
-      ["Control", "Meta", "Alt", "Shift", "OS", "Super"].includes(event.key) ||
-      metaByCode;
+      ['Control', 'Meta', 'Alt', 'Shift', 'OS', 'Super'].includes(event.key) || metaByCode;
     const baseKey = isModifierKey ? null : codeToAcceleratorKey(event.code);
 
     // Live preview (works with modifiers only). A single keydown carries one
@@ -352,7 +365,7 @@ export function SettingsPage() {
     setLivePreview(
       [...modifierTokens(mods), ...(baseKey ? [baseKey] : [])]
         .map(modifierLabel)
-        .join(isMac() ? " " : " + "),
+        .join(isMac() ? ' ' : ' + '),
     );
 
     if (isModifierKey || !baseKey) return; // wait for a real key
@@ -360,12 +373,12 @@ export function SettingsPage() {
     const accelerator = buildAccelerator(mods, baseKey);
     if (!accelerator) {
       setShortcutError(
-        `Hold ${isMac() ? "\u2318 Cmd, \u2325 Option," : "Ctrl, Alt,"} or Super together with the key. Shift alone isn't enough.`,
+        `Hold ${isMac() ? '\u2318 Cmd, \u2325 Option,' : 'Ctrl, Alt,'} or Super together with the key. Shift alone isn't enough.`,
       );
-      setPendingShortcut("");
+      setPendingShortcut('');
       return;
     }
-    setShortcutError("");
+    setShortcutError('');
     setPendingShortcut(accelerator);
     // Don't auto-save; wait for the user to confirm with the Save button.
   };
@@ -373,8 +386,7 @@ export function SettingsPage() {
   const clearLiveOnRelease = (event: React.KeyboardEvent<HTMLElement>) => {
     // If a full combo isn't captured yet and user releases all modifiers, reset preview.
     if (pendingShortcut) return;
-    if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey)
-      setLivePreview("");
+    if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey) setLivePreview('');
   };
 
   const resetShortcuts = async () => {
@@ -382,25 +394,20 @@ export function SettingsPage() {
     if (result) setShortcuts(result);
     if (result)
       await update.mutateAsync([
-        { type: "quick_access", key: "shortcuts", value: result.shortcuts },
+        { type: 'quick_access', key: 'shortcuts', value: result.shortcuts },
       ]);
-    setShortcutError("");
+    setShortcutError('');
   };
 
   return (
     <div className="mx-auto max-w-7xl p-8">
       <h2 className="mb-1 text-2xl">Settings</h2>
-      <p className="mt-0 text-sm text-muted-foreground">
-        Configure how AnyRem behaves.
-      </p>
+      <p className="mt-0 text-sm text-muted-foreground">Configure how AnyRem behaves.</p>
       {settings.isPending && (
         <p className="mt-7 text-sm text-muted-foreground">Loading settings...</p>
       )}
       {settings.isError && (
-        <ErrorMessage
-          message={getApiErrorMessage(settings.error)}
-          className="mt-7"
-        />
+        <ErrorMessage message={getApiErrorMessage(settings.error)} className="mt-7" />
       )}
       {data && (
         <div className="mt-7 space-y-5">
@@ -447,9 +454,7 @@ export function SettingsPage() {
               >
                 <Switch
                   checked={data.search.save_history}
-                  onCheckedChange={(value) =>
-                    save("search", "save_history", value)
-                  }
+                  onCheckedChange={(value) => save('search', 'save_history', value)}
                 />
               </SettingRow>
             </CardContent>
@@ -476,16 +481,14 @@ export function SettingsPage() {
                   checked={data.appearance.show_activity_panel}
                   onCheckedChange={(value) => {
                     setActivityOpen(value);
-                    save("appearance", "show_activity_panel", value);
+                    save('appearance', 'show_activity_panel', value);
                   }}
                 />
               </SettingRow>
               <SettingRow title="Theme" description="Choose app color mode.">
                 <Select
                   value={data.appearance.theme}
-                  onValueChange={(value) =>
-                    save("appearance", "theme", value as Theme)
-                  }
+                  onValueChange={(value) => save('appearance', 'theme', value as Theme)}
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -494,6 +497,41 @@ export function SettingsPage() {
                     <SelectItem value="LIGHT">Light</SelectItem>
                     <SelectItem value="DARK">Dark</SelectItem>
                     <SelectItem value="SYSTEM">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </SettingRow>
+              <SettingRow title="Category view" description="Choose how categories are displayed.">
+                <Select
+                  value={categoryView.data ?? 'card'}
+                  onValueChange={(value) => {
+                    updateCategoryView.mutate(value as 'card' | 'list');
+                  }}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="list">List</SelectItem>
+                  </SelectContent>
+                </Select>
+              </SettingRow>
+              <SettingRow
+                title="Category detail view"
+                description="Choose how memories in a category are displayed."
+              >
+                <Select
+                  value={categoryDetailView.data ?? 'card'}
+                  onValueChange={(value) => {
+                    updateCategoryDetailView.mutate(value as 'card' | 'list');
+                  }}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="list">List</SelectItem>
                   </SelectContent>
                 </Select>
               </SettingRow>
@@ -519,21 +557,16 @@ export function SettingsPage() {
               >
                 <Switch
                   checked={data.recap.enabled}
-                  onCheckedChange={(value) => save("recap", "enabled", value)}
+                  onCheckedChange={(value) => save('recap', 'enabled', value)}
                 />
               </SettingRow>
-              <SettingRow
-                title="Delivery time"
-                description="Local time for the scheduled recap."
-              >
+              <SettingRow title="Delivery time" description="Local time for the scheduled recap.">
                 <Input
                   type="time"
                   defaultValue={data.recap.delivery_time}
                   className="w-32"
                   disabled={!data.recap.enabled}
-                  onBlur={(event) =>
-                    save("recap", "delivery_time", event.target.value)
-                  }
+                  onBlur={(event) => save('recap', 'delivery_time', event.target.value)}
                 />
               </SettingRow>
               <SettingRow
@@ -542,36 +575,25 @@ export function SettingsPage() {
               >
                 <Select
                   value={data.regional.timezone}
-                  onValueChange={(value) =>
-                    save("regional", "timezone", value)
-                  }
+                  onValueChange={(value) => save('regional', 'timezone', value)}
                 >
                   <SelectTrigger className="w-[22rem] max-w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="min-w-[22rem]">
                     {timezones.map(([value, label]) => (
-                      <SelectItem
-                        key={value}
-                        value={value}
-                        className="whitespace-nowrap"
-                      >
+                      <SelectItem key={value} value={value} className="whitespace-nowrap">
                         {timezoneLabel(value, label)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </SettingRow>
-              <SettingRow
-                title="Email delivery"
-                description="Send daily recap by email."
-              >
+              <SettingRow title="Email delivery" description="Send daily recap by email.">
                 <Switch
                   checked={data.recap.email_enabled}
                   disabled={!data.recap.enabled}
-                  onCheckedChange={(value) =>
-                    save("recap", "email_enabled", value)
-                  }
+                  onCheckedChange={(value) => save('recap', 'email_enabled', value)}
                 />
               </SettingRow>
               <SettingRow
@@ -581,17 +603,13 @@ export function SettingsPage() {
                 <Switch
                   checked={data.recap.telegram_enabled}
                   disabled={!data.recap.enabled || !data.telegram.configured}
-                  onCheckedChange={(value) =>
-                    save("recap", "telegram_enabled", value)
-                  }
+                  onCheckedChange={(value) => save('recap', 'telegram_enabled', value)}
                 />
               </SettingRow>
               <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Select
                   value={testRecapProvider}
-                  onValueChange={(value) =>
-                    setTestRecapProvider(value as RecapProvider)
-                  }
+                  onValueChange={(value) => setTestRecapProvider(value as RecapProvider)}
                   disabled={!data.recap.enabled}
                 >
                   <SelectTrigger className="w-36">
@@ -609,23 +627,18 @@ export function SettingsPage() {
                   disabled={
                     !data.recap.enabled ||
                     testRecap.isPending ||
-                    (testRecapProvider === "TELEGRAM" && !data.telegram.configured)
+                    (testRecapProvider === 'TELEGRAM' && !data.telegram.configured)
                   }
                   onClick={() => testRecap.mutate(testRecapProvider)}
                 >
-                  {testRecap.isPending ? "Sending..." : "Send test recap"}
+                  {testRecap.isPending ? 'Sending...' : 'Send test recap'}
                 </Button>
               </div>
               {testRecap.isError && (
-                <ErrorMessage
-                  message={getApiErrorMessage(testRecap.error)}
-                  className="mt-3"
-                />
+                <ErrorMessage message={getApiErrorMessage(testRecap.error)} className="mt-3" />
               )}
               {testRecap.isSuccess && (
-                <p className="mb-0 mt-3 text-xs text-emerald-600">
-                  Test recap sent.
-                </p>
+                <p className="mb-0 mt-3 text-xs text-emerald-600">Test recap sent.</p>
               )}
             </CardContent>
           </Card>
@@ -639,22 +652,20 @@ export function SettingsPage() {
                 <h3 className="m-0 text-base">Telegram</h3>
                 <p className="m-0 text-xs text-muted-foreground">
                   {data.telegram.configured
-                    ? `Connected to chat ${data.telegram.maskedChatId ?? ""}. Recaps can be sent here.`
-                    : "Link a Telegram bot so the app can message your daily recap to you."}
+                    ? `Connected to chat ${data.telegram.maskedChatId ?? ''}. Recaps can be sent here.`
+                    : 'Link a Telegram bot so the app can message your daily recap to you.'}
                 </p>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <ol className="m-0 list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
                 <li>
-                  In Telegram, open <span className="font-medium">@BotFather</span>,
-                  send <span className="font-medium">/newbot</span>, and copy the
-                  bot token it gives you.
+                  In Telegram, open <span className="font-medium">@BotFather</span>, send{' '}
+                  <span className="font-medium">/newbot</span>, and copy the bot token it gives you.
                 </li>
                 <li>
-                  Send any message to your new bot, then open{" "}
-                  <span className="font-medium">@userinfobot</span> to get your
-                  numeric Chat ID.
+                  Send any message to your new bot, then open{' '}
+                  <span className="font-medium">@userinfobot</span> to get your numeric Chat ID.
                 </li>
                 <li>Paste both below and click Save Telegram.</li>
               </ol>
@@ -686,9 +697,7 @@ export function SettingsPage() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="outline"
-                  disabled={
-                    configureTelegram.isPending || !botToken.trim() || !chatId.trim()
-                  }
+                  disabled={configureTelegram.isPending || !botToken.trim() || !chatId.trim()}
                   onClick={() =>
                     configureTelegram.mutate({
                       botToken: botToken.trim(),
@@ -696,14 +705,14 @@ export function SettingsPage() {
                     })
                   }
                 >
-                  {configureTelegram.isPending ? "Saving..." : "Save Telegram"}
+                  {configureTelegram.isPending ? 'Saving...' : 'Save Telegram'}
                 </Button>
                 <Button
                   variant="outline"
                   disabled={!data.telegram.configured || testTelegram.isPending}
                   onClick={() => testTelegram.mutate()}
                 >
-                  {testTelegram.isPending ? "Sending..." : "Send test"}
+                  {testTelegram.isPending ? 'Sending...' : 'Send test'}
                 </Button>
                 <Button
                   variant="outline"
@@ -746,7 +755,7 @@ export function SettingsPage() {
                   <button
                     type="button"
                     aria-label="Change Quick Search shortcut"
-                    onClick={() => openRecorder("search")}
+                    onClick={() => openRecorder('search')}
                     className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     {displayShortcut(shortcuts.shortcuts.search)}
@@ -765,16 +774,14 @@ export function SettingsPage() {
                   <button
                     type="button"
                     aria-label="Change Quick Create shortcut"
-                    onClick={() => openRecorder("create")}
+                    onClick={() => openRecorder('create')}
                     className="rounded-lg border bg-background px-3 py-1.5 text-xs hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     {displayShortcut(shortcuts.shortcuts.create)}
                   </button>
                 </span>
               </div>
-              {!!shortcutError && (
-                <p className="m-0 text-xs text-destructive">{shortcutError}</p>
-              )}
+              {!!shortcutError && <p className="m-0 text-xs text-destructive">{shortcutError}</p>}
               {!!shortcutNotice && (
                 <p className="m-0 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
                   {shortcutNotice}
@@ -782,8 +789,8 @@ export function SettingsPage() {
               )}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  Combine {isMac() ? "\u2318 Cmd, \u2325 Option," : "Ctrl, Alt,"} or Shift with one other key.
-                  Some combos may be reserved by the OS.
+                  Combine {isMac() ? '\u2318 Cmd, \u2325 Option,' : 'Ctrl, Alt,'} or Shift with one
+                  other key. Some combos may be reserved by the OS.
                 </span>
                 <Button type="button" variant="ghost" size="sm" onClick={resetShortcuts}>
                   Reset to defaults
@@ -800,9 +807,9 @@ export function SettingsPage() {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>
-                  {recordingShortcut === "create"
-                    ? "Quick Create shortcut"
-                    : "Quick Search shortcut"}
+                  {recordingShortcut === 'create'
+                    ? 'Quick Create shortcut'
+                    : 'Quick Search shortcut'}
                 </DialogTitle>
                 <DialogDescription>
                   Press the keys you want, then click Save. Esc cancels.
@@ -814,7 +821,7 @@ export function SettingsPage() {
                 autoFocus
                 onKeyDown={captureShortcut}
                 onKeyUp={clearLiveOnRelease}
-                onBlur={() => !pendingShortcut && setLivePreview("")}
+                onBlur={() => !pendingShortcut && setLivePreview('')}
                 className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-muted/40 text-center outline-none transition-colors focus:border-primary focus:bg-accent/40"
               >
                 {saving ? (
@@ -829,34 +836,25 @@ export function SettingsPage() {
                   </span>
                 ) : (
                   <>
-                    <span className="text-sm text-muted-foreground">
-                      Press keys now
-                    </span>
+                    <span className="text-sm text-muted-foreground">Press keys now</span>
                     <span className="text-xs text-muted-foreground">
-                      e.g. {isMac() ? "\u2318 \u2325 Space" : "Ctrl + Alt + Space"}
+                      e.g. {isMac() ? '\u2318 \u2325 Space' : 'Ctrl + Alt + Space'}
                     </span>
                   </>
                 )}
               </button>
 
               {!!shortcutError && (
-                <p className="m-0 text-center text-xs text-destructive">
-                  {shortcutError}
-                </p>
+                <p className="m-0 text-center text-xs text-destructive">{shortcutError}</p>
               )}
               <p className="m-0 text-center text-xs text-muted-foreground">
                 {pendingShortcut
-                  ? "Press Save to apply, or press new keys to change it."
-                  : "Hold your modifiers and press a key."}
+                  ? 'Press Save to apply, or press new keys to change it.'
+                  : 'Hold your modifiers and press a key.'}
               </p>
 
               <div className="mt-2 flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={closeRecorder}
-                  disabled={saving}
-                >
+                <Button type="button" variant="outline" onClick={closeRecorder} disabled={saving}>
                   Cancel
                 </Button>
                 <Button
@@ -868,7 +866,7 @@ export function SettingsPage() {
                   }
                   disabled={saving || !pendingShortcut}
                 >
-                  {saving ? "Saving..." : "Save"}
+                  {saving ? 'Saving...' : 'Save'}
                 </Button>
               </div>
             </DialogContent>
@@ -892,9 +890,7 @@ export function SettingsPage() {
                 onClick={() => clearHistory.mutate()}
                 disabled={clearHistory.isPending}
               >
-                {clearHistory.isPending
-                  ? "Clearing..."
-                  : "Clear search history"}
+                {clearHistory.isPending ? 'Clearing...' : 'Clear search history'}
               </Button>
               {clearHistory.isError && (
                 <ErrorMessage
