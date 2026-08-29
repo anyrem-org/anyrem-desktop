@@ -11,6 +11,7 @@ import {
 import { getApiErrorMessage } from '../../../shared/lib/api-client';
 import { useUiStore } from '../../../shared/store/ui.store';
 import { BlockNoteEditor, type NoteBlocks } from './BlockNoteEditor';
+import { NoteDeleteSection } from './NoteDeleteSection';
 import { useGetNote, useGetNotes } from '../hooks/useNotes';
 
 export function NoteDetailModal() {
@@ -71,24 +72,31 @@ function NoteDetailModalBody({ id, close }: { id: string; close: () => void }) {
           </>
         )}
       </div>
-      <aside className="w-72 shrink-0 border-l bg-slate-50 p-6">
-        <h3 className="mt-0 text-sm">Related content</h3>
-        <p className="mb-5 text-xs text-slate-400">Linked memories</p>
-        <div className="space-y-3">
-          {related.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => useUiStore.getState().selectNote(item.id)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-left"
-            >
-              <strong className="line-clamp-2 text-xs leading-5">{item.title}</strong>
-              <span className="mt-2 block text-[11px]" style={{ color: item.categoryColor }}>
-                {item.category}
-              </span>
-            </button>
-          ))}
-          {!related.length && <p className="text-xs text-muted-foreground">No linked memories.</p>}
+      <aside className="flex w-72 shrink-0 flex-col border-l bg-slate-50">
+        <div className="scrollbar flex-1 overflow-y-auto p-6">
+          <h3 className="mt-0 text-sm">Related content</h3>
+          <p className="mb-5 text-xs text-slate-400">Linked memories</p>
+          <div className="space-y-3">
+            {related.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => useUiStore.getState().selectNote(item.id)}
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-left"
+              >
+                <strong className="line-clamp-2 text-xs leading-5">{item.title}</strong>
+                <span className="mt-2 block text-[11px]" style={{ color: item.categoryColor }}>
+                  {item.category}
+                </span>
+              </button>
+            ))}
+            {!related.length && <p className="text-xs text-muted-foreground">No linked memories.</p>}
+          </div>
         </div>
+        {note && (
+          <div className="border-t bg-slate-50 p-6">
+            <NoteDeleteSection id={note.id} title={note.title} onDeleted={close} />
+          </div>
+        )}
       </aside>
     </>
   );

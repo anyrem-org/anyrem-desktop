@@ -44,3 +44,5 @@ export const updateNote = ({ id, input }: { id: string; input: NoteInput }) =>
   apiClient.patch<ApiNote>(`/notes/${id}`, input).then(({ data }) => mapNote(data));
 export const pinNote = ({ id, pinned }: { id: string; pinned: boolean }) =>
   apiClient.patch<{ pinned: boolean }>(`/notes/${id}/pin`, { pinned }).then(({ data }) => data);
+export const deleteNote = (id: string) =>
+  apiClient.delete<{ deleted: true }>(`/notes/${id}`).then(({ data }) => data);

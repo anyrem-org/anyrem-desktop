@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../auth/store/auth.store";
-import { createNote, getNote, getNotes, pinNote, updateNote } from "../api/notes.api";
+import { createNote, deleteNote, getNote, getNotes, pinNote, updateNote } from "../api/notes.api";
 import type { NoteRecord } from "../types/note.types";
 import type { NoteFilters } from "../types/note.types";
 
@@ -26,6 +26,16 @@ export function usePinNote() {
       client.setQueryData<NoteRecord | undefined>(noteKeys.detail(id), (note) =>
         note ? { ...note, pinned } : note,
       );
+      return invalidateNoteLists(client);
+    },
+  });
+}
+export function useDeleteNote() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: deleteNote,
+    onSuccess: (_data, id) => {
+      client.removeQueries({ queryKey: noteKeys.detail(id) });
       return invalidateNoteLists(client);
     },
   });
