@@ -10,6 +10,7 @@ import { useUiStore } from '../../../shared/store/ui.store';
 import { CategoryFormDialog } from '../../categories/components/CategoryFormDialog';
 import { useGetCategories } from '../../categories/hooks/useCategories';
 import { BlockNoteEditor, type NoteBlocks, titleOf } from '../components/BlockNoteEditor';
+import { NoteDeleteSection } from '../components/NoteDeleteSection';
 import { useCreateNote, useGetNote, useGetNotes, useUpdateNote } from '../hooks/useNotes';
 
 export function NoteEditorPage() {
@@ -74,11 +75,11 @@ export function NoteEditorPage() {
           onClick={() => setDetailsOpen((open) => !open)}
           aria-label={detailsOpen ? 'Hide note details' : 'Show note details'}
           title={detailsOpen ? 'Hide note details' : 'Show note details'}
-          className="ml-auto mr-2 text-muted-foreground"
+          className="ml-auto text-muted-foreground"
         >
           {detailsOpen ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}
         </Button>
-        <Button onClick={save} disabled={mutation.isPending || (!title && !fallbackTitle)}>
+        <Button onClick={save} disabled={mutation.isPending || (!title && !fallbackTitle)} className="ml-2">
           <Save size={16} /> {mutation.isPending ? 'Saving…' : 'Save'}
         </Button>
       </div>
@@ -108,14 +109,14 @@ export function NoteEditorPage() {
           />
         </div>
         {detailsOpen && (
-          <aside className="scrollbar w-80 shrink-0 overflow-y-auto border-l bg-muted/20">
+          <aside className="flex w-80 shrink-0 flex-col border-l bg-muted/20">
             <div className="sticky top-0 border-b bg-background/95 px-5 py-4 backdrop-blur">
               <h2 className="m-0 text-sm font-semibold">Note details</h2>
               <p className="mb-0 mt-1 text-xs text-muted-foreground">
                 Organize and connect this memory.
               </p>
             </div>
-            <div className="space-y-5 p-5">
+            <div className="scrollbar flex-1 space-y-5 overflow-y-auto p-5">
               <section className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs">Categories</Label>
@@ -164,6 +165,17 @@ export function NoteEditorPage() {
                 />
               </section>
             </div>
+            {id && (
+              <div className="border-t bg-background/95 p-5">
+                <NoteDeleteSection
+                  id={id}
+                  title={title || fallbackTitle || 'Untitled memory'}
+                  onDeleted={() => {
+                    navigate('/search', { replace: true });
+                  }}
+                />
+              </div>
+            )}
           </aside>
         )}
       </div>

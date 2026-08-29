@@ -1,31 +1,30 @@
-import { ArrowUpRight, Clock3, FileText, Pin, Search, X } from "lucide-react";
-import { useDeferredValue, useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Pagination } from "../../../shared/components/Pagination";
-import { Badge } from "../../../shared/components/ui/badge";
-import { Button } from "../../../shared/components/ui/button";
-import { ErrorMessage } from "../../../shared/components/ErrorMessage";
+import { ArrowUpRight, Clock3, FileText, Pin, Search, X } from 'lucide-react';
+import { useDeferredValue, useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Pagination } from '../../../shared/components/Pagination';
+import { Badge } from '../../../shared/components/ui/badge';
+import { Button } from '../../../shared/components/ui/button';
+import { ErrorMessage } from '../../../shared/components/ErrorMessage';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../shared/components/ui/select";
-import { getApiErrorMessage } from "../../../shared/lib/api-client";
-import { useGetCategories } from "../../categories/hooks/useCategories";
-import { NoteContent } from "../../notes/components/NoteContent";
-import { useGetNote, usePinNote } from "../../notes/hooks/useNotes";
-import type { Category } from "../../categories/types/category.types";
-import type { Note } from "../../notes/types/note.types";
-import { useSearchHistory, useSearchNotes } from "../hooks/useSearch";
+} from '../../../shared/components/ui/select';
+import { getApiErrorMessage } from '../../../shared/lib/api-client';
+import { useGetCategories } from '../../categories/hooks/useCategories';
+import { NoteContent } from '../../notes/components/NoteContent';
+import { NoteDeleteSection } from '../../notes/components/NoteDeleteSection';
+import { useGetNote, usePinNote } from '../../notes/hooks/useNotes';
+import type { Category } from '../../categories/types/category.types';
+import type { Note } from '../../notes/types/note.types';
+import { useSearchHistory, useSearchNotes } from '../hooks/useSearch';
 
-type Filter = "all" | "today" | "pinned";
+type Filter = 'all' | 'today' | 'pinned';
 
 function Highlight({ text, query }: { text: string; query: string }) {
-  const index = text
-    .toLocaleLowerCase()
-    .indexOf(query.trim().toLocaleLowerCase());
+  const index = text.toLocaleLowerCase().indexOf(query.trim().toLocaleLowerCase());
   if (!query.trim() || index < 0) return text;
   return (
     <>
@@ -38,7 +37,17 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-function SearchPreview({ note, query, categories }: { note?: Note; query: string; categories: Category[] }) {
+function SearchPreview({
+  note,
+  query,
+  categories,
+  onDeleted,
+}: {
+  note?: Note;
+  query: string;
+  categories: Category[];
+  onDeleted: () => void;
+}) {
   const detail = useGetNote(note?.id);
   const pinNote = usePinNote();
   if (!note)
@@ -47,9 +56,7 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
         Select a memory to preview.
       </div>
     );
-  const noteCategories = categories.filter((category) =>
-    note.categoryIds.includes(category.id),
-  );
+  const noteCategories = categories.filter((category) => note.categoryIds.includes(category.id));
   const pinned = detail.data?.pinned ?? note.pinned ?? false;
   return (
     <section className="scrollbar min-h-0 overflow-y-auto bg-[#f7f8fc]">
@@ -71,14 +78,14 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
           <Button
             variant="ghost"
             size="icon"
-            title={pinned ? "Unpin memory" : "Pin memory"}
+            title={pinned ? 'Unpin memory' : 'Pin memory'}
             onClick={() => pinNote.mutate({ id: note.id, pinned: !pinned })}
             disabled={pinNote.isPending}
           >
             <Pin
               size={16}
-              className={pinned ? "text-amber-500" : undefined}
-              fill={pinned ? "currentColor" : "none"}
+              className={pinned ? 'text-amber-500' : undefined}
+              fill={pinned ? 'currentColor' : 'none'}
             />
           </Button>
         </div>
@@ -86,7 +93,8 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
           <Highlight text={note.title} query={query} />
         </h2>
         <p className="m-0 text-xs text-muted-foreground">
-          Edited {note.updatedAt} · {detail.data?.relatedIds.length ?? note.relatedIds.length} related memories
+          Edited {note.updatedAt} · {detail.data?.relatedIds.length ?? note.relatedIds.length}{' '}
+          related memories
         </p>
         <div className="my-6 h-px bg-border" />
         <div className="flex-1">
@@ -95,9 +103,7 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
               Loading memory…
             </div>
           )}
-          {detail.isError && (
-            <ErrorMessage message={getApiErrorMessage(detail.error)} />
-          )}
+          {detail.isError && <ErrorMessage message={getApiErrorMessage(detail.error)} />}
           {detail.data && (
             <NoteContent
               html={detail.data.contentHtml}
@@ -126,12 +132,12 @@ function SearchPreview({ note, query, categories }: { note?: Note; query: string
 
 export function SearchHomePage() {
   const [searchParams] = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [focused, setFocused] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [filter, setFilter] = useState<Filter>("all");
-  const [sort, setSort] = useState("relevance");
-  const [categoryId, setCategoryId] = useState("all");
+  const [filter, setFilter] = useState<Filter>('all');
+  const [sort, setSort] = useState('relevance');
+  const [categoryId, setCategoryId] = useState('all');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string>();
   const navigate = useNavigate();
@@ -143,10 +149,10 @@ export function SearchHomePage() {
     q: deferredQuery,
     page,
     limit: 20,
-    categoryId: categoryId === "all" ? undefined : categoryId,
-    pinned: filter === "pinned" ? true : undefined,
-    from: filter === "today" ? today.toISOString() : undefined,
-    sort: sort as "relevance" | "recent",
+    categoryId: categoryId === 'all' ? undefined : categoryId,
+    pinned: filter === 'pinned' ? true : undefined,
+    from: filter === 'today' ? today.toISOString() : undefined,
+    sort: sort as 'relevance' | 'recent',
   });
   const history = useSearchHistory(historyOpen);
   const results = search.data?.items ?? [];
@@ -157,8 +163,7 @@ export function SearchHomePage() {
   }, [selected, selectedId]);
   const move = (direction: number) => {
     const index = results.findIndex((note) => note.id === selected?.id);
-    const next =
-      results[Math.max(0, Math.min(results.length - 1, index + direction))];
+    const next = results[Math.max(0, Math.min(results.length - 1, index + direction))];
     if (next) setSelectedId(next.id);
   };
   return (
@@ -166,7 +171,7 @@ export function SearchHomePage() {
       <div className="relative z-20 shrink-0 border-b px-6 py-4">
         <div className="flex items-center gap-3">
           <div
-            className={`relative flex h-11 min-w-0 flex-1 items-center rounded-xl border bg-muted/40 ${focused ? "border-primary ring-2 ring-primary/10" : ""}`}
+            className={`relative flex h-11 min-w-0 flex-1 items-center rounded-xl border bg-muted/40 ${focused ? 'border-primary ring-2 ring-primary/10' : ''}`}
           >
             <Search className="ml-3 text-muted-foreground" size={18} />
             <input
@@ -178,28 +183,25 @@ export function SearchHomePage() {
               }}
               onBlur={() => setTimeout(() => setFocused(false), 120)}
               onKeyDown={(event) => {
-                if (event.key === "ArrowDown") {
+                if (event.key === 'ArrowDown') {
                   event.preventDefault();
                   move(1);
                 }
-                if (event.key === "ArrowUp") {
+                if (event.key === 'ArrowUp') {
                   event.preventDefault();
                   move(-1);
                 }
-                if (event.key === "Enter" && selected)
-                  navigate(`/notes/${selected.id}`);
+                if (event.key === 'Enter' && selected) navigate(`/notes/${selected.id}`);
               }}
               className="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-sm outline-none"
               placeholder="Search memories..."
             />
             {search.isFetching && (
-              <span className="mr-3 text-xs text-muted-foreground">
-                Searching…
-              </span>
+              <span className="mr-3 text-xs text-muted-foreground">Searching…</span>
             )}
             {query && (
               <button
-                onClick={() => setQuery("")}
+                onClick={() => setQuery('')}
                 className="mr-2 rounded-md border-0 bg-transparent p-1 text-muted-foreground hover:bg-muted"
               >
                 <X size={15} />
@@ -216,9 +218,7 @@ export function SearchHomePage() {
               Recent searches
             </p>
             {history.isFetching && (
-              <p className="px-2 py-2 text-xs text-muted-foreground">
-                Loading…
-              </p>
+              <p className="px-2 py-2 text-xs text-muted-foreground">Loading…</p>
             )}
             {(history.data ?? []).map((item) => (
               <button
@@ -231,22 +231,20 @@ export function SearchHomePage() {
               </button>
             ))}
             {!history.isFetching && !(history.data ?? []).length && (
-              <p className="px-2 py-2 text-xs text-muted-foreground">
-                No recent searches.
-              </p>
+              <p className="px-2 py-2 text-xs text-muted-foreground">No recent searches.</p>
             )}
           </div>
         )}
         <div className="mt-3 flex items-center gap-2">
-          {(["all", "today", "pinned"] as Filter[]).map((item) => (
+          {(['all', 'today', 'pinned'] as Filter[]).map((item) => (
             <Button
               key={item}
               size="sm"
-              variant={filter === item ? "secondary" : "ghost"}
+              variant={filter === item ? 'secondary' : 'ghost'}
               onClick={() => setFilter(item)}
               className="h-8 capitalize"
             >
-              {item === "pinned" && <Pin size={13} />} {item}
+              {item === 'pinned' && <Pin size={13} />} {item}
             </Button>
           ))}
           <span className="ml-2 text-xs text-muted-foreground">
@@ -258,7 +256,11 @@ export function SearchHomePage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
-              {(categories.data ?? []).map((category) => <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>)}
+              {(categories.data ?? []).map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={sort} onValueChange={setSort}>
@@ -277,13 +279,15 @@ export function SearchHomePage() {
           <div className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Search results
           </div>
-          {search.isError && <ErrorMessage message={getApiErrorMessage(search.error)} className="m-3" />}
+          {search.isError && (
+            <ErrorMessage message={getApiErrorMessage(search.error)} className="m-3" />
+          )}
           {results.map((note) => (
             <button
               key={note.id}
               onClick={() => setSelectedId(note.id)}
               onDoubleClick={() => navigate(`/notes/${note.id}`)}
-              className={`group flex w-full items-start gap-3 rounded-xl border-0 p-3 text-left ${selected?.id === note.id ? "bg-[#f1f1ef]" : "bg-transparent hover:bg-muted/60"}`}
+              className={`group flex w-full items-start gap-3 rounded-xl border-0 p-3 text-left ${selected?.id === note.id ? 'bg-[#f1f1ef]' : 'bg-transparent hover:bg-muted/60'}`}
             >
               <FileText size={17} className="mt-0.5 shrink-0 text-slate-400" />
               <span className="min-w-0 flex-1">
@@ -292,11 +296,7 @@ export function SearchHomePage() {
                     <Highlight text={note.title} query={query} />
                   </strong>
                   {note.pinned && (
-                    <Pin
-                      size={12}
-                      className="shrink-0 text-amber-500"
-                      fill="currentColor"
-                    />
+                    <Pin size={12} className="shrink-0 text-amber-500" fill="currentColor" />
                   )}
                 </span>
                 <span className="mt-1 block truncate text-[11px] text-muted-foreground">
@@ -309,13 +309,25 @@ export function SearchHomePage() {
             </button>
           ))}
           {!search.isFetching && !search.isError && !results.length && (
-            <div className="p-10 text-center text-sm text-muted-foreground">
-              No memory found.
-            </div>
+            <div className="p-10 text-center text-sm text-muted-foreground">No memory found.</div>
           )}
-          {search.data && <Pagination page={search.data.page} totalPages={search.data.totalPages} total={search.data.total} onChange={setPage} />}
+          {search.data && (
+            <Pagination
+              page={search.data.page}
+              totalPages={search.data.totalPages}
+              total={search.data.total}
+              onChange={setPage}
+            />
+          )}
         </section>
-        <SearchPreview note={selected} query={query} categories={categories.data ?? []} />
+        <SearchPreview
+          note={selected}
+          query={query}
+          categories={categories.data ?? []}
+          onDeleted={() => {
+            setSelectedId(undefined);
+          }}
+        />
       </div>
     </div>
   );

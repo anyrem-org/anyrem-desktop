@@ -7,3 +7,4 @@ release
 .env.production
 build/icon.png
 build/icons
+*.tsbuildinfo
