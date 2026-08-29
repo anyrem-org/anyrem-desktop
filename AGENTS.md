@@ -69,6 +69,10 @@ Each feature typically has: `components/`, `hooks/`, `api/`, `types/`, `pages/`.
 - **No mock data in production API modules.** All data comes from the backend via `apiClient`.
 - **State:** TanStack Query for server data, Zustand for UI state (sidebar, panels, modals). Don't duplicate server data into Zustand.
 - **TypeScript:** proper types, avoid `any` unless necessary.
+- **Formatting:** All new or modified code must follow `.prettierrc`; run Prettier on touched files before finishing.
+- **Control flow:** Use block bodies with explicit `return` for arrow callbacks; avoid expression bodies such as `() => value`. Always use braces for `if` / `else`, including single statements.
+- **Readability:** Use one blank line between import groups, top-level declarations, and logical function sections; do not add blank lines inside tightly coupled short blocks or between variables in the same setup group. In components and hooks, separate input/navigation, local state, derived values, queries/mutations, local helpers/effects, guard returns, and render with blank lines. Add a blank line before `return` only when it separates setup/computation from the returned result. Group imports as external → shared → feature-local → type-only. Prefer named helpers and multi-line JSX props for non-trivial logic. Keep one responsibility per callback; avoid dense one-line conditionals and nested JSX expressions.
+- **Naming and comments:** Use `is` / `has` / `can` for booleans, `handle*` for internal handlers, and `on*` for callback props. Comments explain intent or constraints, not obvious code behavior.
 - **UI:** shadcn-style primitives in `shared/components/ui`; Tailwind for layout. Light theme, clean/minimal, soft blue/purple accent.
 - **Electron security:** keep main/preload/renderer separated; use preload + contextBridge; don't enable `nodeIntegration` in renderer unless needed.
 - Principles: KISS, DRY, YAGNI, separation of concerns, small focused components. Don't over-engineer.

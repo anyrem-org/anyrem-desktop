@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Commit Staged Changes'
+  short_description: 'Commit staged work with a clear body'
+  default_prompt: 'Use $commit to inspect staged changes and create a clear commit.'
