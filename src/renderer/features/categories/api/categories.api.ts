@@ -38,9 +38,34 @@ function mapCategory(item: ApiCategory): Category {
   };
 }
 
+function normalizeCategoryListResponse(
+  data: Paginated<ApiCategory> | ApiCategory[],
+  filters: CategoryListFilters,
+): Paginated<ApiCategory> {
+  if (Array.isArray(data)) {
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 20;
+    const total = data.length;
+
+    return {
+      items: data.slice((page - 1) * limit, page * limit),
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  return data;
+}
+
 export async function getCategories(filters: CategoryListFilters = {}) {
-  const { data } = await apiClient.get<Paginated<ApiCategory>>('/categories', { params: filters });
-  return { ...data, items: data.items.map(mapCategory) };
+  const { data } = await apiClient.get<Paginated<ApiCategory> | ApiCategory[]>('/categories', {
+    params: filters,
+  });
+  const paginated = normalizeCategoryListResponse(data, filters);
+
+  return { ...paginated, items: paginated.items.map(mapCategory) };
 }
 
 export async function getCategory(id: string) {

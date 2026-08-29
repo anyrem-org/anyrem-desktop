@@ -87,13 +87,18 @@ export const useGetCategoryNotes = (id: string | undefined, filters: CategoryNot
   });
 };
 
+function invalidateCategoryQueries(client: ReturnType<typeof useQueryClient>) {
+  client.invalidateQueries({ queryKey: categoryKeys.all });
+  client.invalidateQueries({ queryKey: ['categories', 'list'] });
+}
+
 export function useCreateCategory() {
   const client = useQueryClient();
 
   return useMutation({
     mutationFn: createCategory,
     onSuccess: () => {
-      client.invalidateQueries({ queryKey: categoryKeys.all });
+      invalidateCategoryQueries(client);
     },
   });
 }
@@ -104,7 +109,7 @@ export function useUpdateCategory() {
   return useMutation({
     mutationFn: updateCategory,
     onSuccess: (category) => {
-      client.invalidateQueries({ queryKey: categoryKeys.all });
+      invalidateCategoryQueries(client);
       client.invalidateQueries({ queryKey: categoryKeys.detail(category.id) });
     },
   });
@@ -117,7 +122,7 @@ export function useDeleteCategory() {
     mutationFn: deleteCategory,
     onSuccess: (_data, id) => {
       client.removeQueries({ queryKey: categoryKeys.detail(id) });
-      client.invalidateQueries({ queryKey: categoryKeys.all });
+      invalidateCategoryQueries(client);
     },
   });
 }

@@ -13,11 +13,18 @@ import { useDeleteCategory, useGetCategoryList } from '../hooks/useCategories';
 import { useCategoryView, useUpdateCategoryView } from '../hooks/useCategoryView';
 import type { CategorySort } from '../types/category.types';
 
+const PAGE_SIZE = 20;
+
 export function CategoriesPage() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<CategorySort>('updated_desc');
-  const categories = useGetCategoryList({ page, q: query.trim() || undefined, sort });
+  const categories = useGetCategoryList({
+    page,
+    limit: PAGE_SIZE,
+    q: query.trim() || undefined,
+    sort,
+  });
   const categoryView = useCategoryView();
   const updateCategoryView = useUpdateCategoryView();
   const remove = useDeleteCategory();
