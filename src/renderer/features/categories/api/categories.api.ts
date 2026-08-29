@@ -5,6 +5,7 @@ import {
   type Category,
   type CategoryDetail,
   type CategoryIcon,
+  type CategoryListFilters,
   type CategoryNoteFilters,
   type CategoryNoteSummary,
   type CreateCategoryInput,
@@ -37,9 +38,9 @@ function mapCategory(item: ApiCategory): Category {
   };
 }
 
-export async function getCategories() {
-  const { data } = await apiClient.get<ApiCategory[]>('/categories');
-  return data.map(mapCategory);
+export async function getCategories(filters: CategoryListFilters = {}) {
+  const { data } = await apiClient.get<Paginated<ApiCategory>>('/categories', { params: filters });
+  return { ...data, items: data.items.map(mapCategory) };
 }
 
 export async function getCategory(id: string) {

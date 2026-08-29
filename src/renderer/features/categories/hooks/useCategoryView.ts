@@ -19,7 +19,7 @@ export function useCategoryView(scope: CategoryViewScope = 'categories') {
   return useQuery({
     queryKey: categoryViewKey(userId ?? '', scope),
     queryFn: () => {
-      return getCategoryView(userId!, scope);
+      return getCategoryView(scope);
     },
     enabled: Boolean(userId),
     initialData: 'card' as CategoryView,
@@ -34,7 +34,7 @@ export function useUpdateCategoryView(scope: CategoryViewScope = 'categories') {
 
   return useMutation({
     mutationFn: (view: CategoryView) => {
-      return updateCategoryView({ userId: userId!, scope, view });
+      return updateCategoryView({ scope, view });
     },
     onSuccess: (view) => {
       if (userId) {

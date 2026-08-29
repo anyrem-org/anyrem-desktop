@@ -9,10 +9,13 @@ import {
   getCategoryNotes,
   updateCategory,
 } from '../api/categories.api';
-import type { CategoryNoteFilters } from '../types/category.types';
+import type { CategoryListFilters, CategoryNoteFilters } from '../types/category.types';
 
 export const categoryKeys = {
   all: ['categories'] as const,
+  list: (filters: CategoryListFilters) => {
+    return ['categories', 'list', filters] as const;
+  },
   detail: (id: string) => {
     return ['categories', id] as const;
   },
@@ -28,7 +31,27 @@ export const useGetCategories = () => {
 
   return useQuery({
     queryKey: categoryKeys.all,
-    queryFn: getCategories,
+    queryFn: () => {
+      return getCategories({ limit: 100 });
+    },
+    select: (data) => {
+      return data.items;
+    },
+    enabled: authenticated,
+    retry: 1,
+  });
+};
+
+export const useGetCategoryList = (filters: CategoryListFilters) => {
+  const authenticated = useAuthStore((state) => {
+    return Boolean(state.accessToken);
+  });
+
+  return useQuery({
+    queryKey: categoryKeys.list(filters),
+    queryFn: () => {
+      return getCategories(filters);
+    },
     enabled: authenticated,
     retry: 1,
   });

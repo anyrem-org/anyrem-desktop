@@ -1,6 +1,6 @@
-import { apiClient } from "../../../shared/lib/api-client";
+import { apiClient } from '../../../shared/lib/api-client';
 
-export type Theme = "LIGHT" | "DARK" | "SYSTEM";
+export type Theme = 'LIGHT' | 'DARK' | 'SYSTEM';
 
 export type SettingsData = {
   appearance: {
@@ -13,8 +13,12 @@ export type SettingsData = {
   search: {
     save_history: boolean;
   };
+  categories: {
+    overview_view: 'card' | 'list';
+    detail_view: 'card' | 'list';
+  };
   quick_access: {
-    shortcuts: Record<"search" | "create", string>;
+    shortcuts: Record<'search' | 'create', string>;
   };
   recap: {
     enabled: boolean;
@@ -31,22 +35,21 @@ export type SettingsData = {
 };
 
 export type SettingUpdate = {
-  type: keyof Omit<SettingsData, "telegram">;
+  type: keyof Omit<SettingsData, 'telegram'>;
   key: string;
   value: string | boolean | number | null | Record<string, string>;
 };
 
-export const getSettings = () =>
-  apiClient.get<SettingsData>("/settings").then(({ data }) => data);
+export const getSettings = () => apiClient.get<SettingsData>('/settings').then(({ data }) => data);
 
 export const updateSettings = (settings: SettingUpdate[]) =>
-  apiClient.patch<SettingsData>("/settings", { settings }).then(({ data }) => data);
+  apiClient.patch<SettingsData>('/settings', { settings }).then(({ data }) => data);
 
 export const configureTelegram = (input: { botToken: string; chatId: string }) =>
-  apiClient.put<SettingsData>("/settings/telegram", input).then(({ data }) => data);
+  apiClient.put<SettingsData>('/settings/telegram', input).then(({ data }) => data);
 
 export const testTelegram = () =>
-  apiClient.post<{ sent: true }>("/settings/telegram/test").then(({ data }) => data);
+  apiClient.post<{ sent: true }>('/settings/telegram/test').then(({ data }) => data);
 
 export const removeTelegram = () =>
-  apiClient.delete<{ configured: false }>("/settings/telegram").then(({ data }) => data);
+  apiClient.delete<{ configured: false }>('/settings/telegram').then(({ data }) => data);

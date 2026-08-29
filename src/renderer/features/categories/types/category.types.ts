@@ -36,6 +36,12 @@ export type Category = {
   updatedAt: string;
 };
 export type CategorySort = 'updated_desc' | 'updated_asc' | 'note_count_desc' | 'note_count_asc';
+export type CategoryListFilters = {
+  page?: number;
+  limit?: number;
+  q?: string;
+  sort?: CategorySort;
+};
 export type CategoryNoteSummary = {
   id: string;
   title: string;

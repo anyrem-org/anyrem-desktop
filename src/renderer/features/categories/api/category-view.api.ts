@@ -1,34 +1,26 @@
+import { getSettings, updateSettings } from '../../settings/api/settings.api';
+
 export type CategoryView = 'card' | 'list';
 export type CategoryViewScope = 'categories' | 'detail';
 
-function storageKey(userId: string, scope: CategoryViewScope) {
-  return `anyrem.categories.${scope}.view.${userId}`;
+function settingsKey(scope: CategoryViewScope) {
+  return scope === 'categories' ? 'overview_view' : 'detail_view';
 }
 
-export const getCategoryView = async (
-  userId: string,
-  scope: CategoryViewScope,
-): Promise<CategoryView> => {
-  try {
-    return window.localStorage.getItem(storageKey(userId, scope)) === 'list' ? 'list' : 'card';
-  } catch {
-    return 'card';
-  }
-};
+export async function getCategoryView(scope: CategoryViewScope): Promise<CategoryView> {
+  const settings = await getSettings();
+  return settings.categories[settingsKey(scope)];
+}
 
-export const updateCategoryView = async ({
-  userId,
+export async function updateCategoryView({
   scope,
   view,
 }: {
-  userId: string;
   scope: CategoryViewScope;
   view: CategoryView;
-}): Promise<CategoryView> => {
-  try {
-    window.localStorage.setItem(storageKey(userId, scope), view);
-  } catch {
-    // ponytail: localStorage is temporary mock persistence; replace with settings API when available.
-  }
-  return view;
-};
+}): Promise<CategoryView> {
+  const settings = await updateSettings([
+    { type: 'categories', key: settingsKey(scope), value: view },
+  ]);
+  return settings.categories[settingsKey(scope)];
+}
