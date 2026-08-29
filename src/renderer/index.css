@@ -4,7 +4,8 @@
 
 :root {
   font-family:
-    Inter,
+    'Source Sans 3 Variable',
+    'Source Sans 3',
     ui-sans-serif,
     system-ui,
     -apple-system,
@@ -29,6 +30,14 @@
   --border: 220 18% 89%;
   --input: 220 18% 89%;
   --ring: 239 75% 62%;
+}
+
+.radix-themes {
+  --default-font-family: 'Source Sans 3 Variable', 'Source Sans 3', ui-sans-serif, system-ui,
+    sans-serif;
+  --heading-font-family: 'Source Sans 3 Variable', 'Source Sans 3', ui-sans-serif, system-ui,
+    sans-serif;
+  --code-font-family: 'Source Code Pro', ui-monospace, monospace;
 }
 @layer base {
   *,
@@ -116,6 +125,7 @@ button {
   background: hsl(var(--muted));
   padding: 0.1rem 0.3rem;
   font-size: 0.9em;
+  font-family: 'Source Code Pro', ui-monospace, monospace;
 }
 .note-preview.tiptap pre {
   overflow-x: auto;
@@ -130,6 +140,7 @@ button {
   padding: 0;
   color: inherit;
   font-size: 0.9rem;
+  font-family: 'Source Code Pro', ui-monospace, monospace;
 }
 .note-preview.tiptap .hljs-keyword,
 .note-preview.tiptap .hljs-selector-tag,
@@ -236,4 +247,5 @@ select {
 .bn-root,
 .bn-root * {
   -webkit-app-region: no-drag;
+  font-family: inherit;
 }
