@@ -5,6 +5,7 @@ import { Button } from "../../../shared/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../../../shared/components/ui/dialog";
 import { Input } from "../../../shared/components/ui/input";
 import { Label } from "../../../shared/components/ui/label";
+import { Switch } from "../../../shared/components/ui/switch";
 import { cn } from "../../../shared/lib/utils";
 import { useCreateCategory, useUpdateCategory } from "../hooks/useCategories";
 import { categoryIconNames, type Category, type CategoryIcon as IconName } from "../types/category.types";
@@ -18,17 +19,18 @@ export function CategoryFormDialog({ trigger, category, onSaved }: { trigger: Re
   const [description, setDescription] = useState(category?.description ?? "");
   const [color, setColor] = useState(category?.color ?? colors[0]);
   const [icon, setIcon] = useState<IconName | undefined>(category?.icon);
+  const [showInGlobalSearch, setShowInGlobalSearch] = useState(category?.showInGlobalSearch ?? true);
   const create = useCreateCategory();
   const update = useUpdateCategory();
   const mutation = category ? update : create;
   const changeOpen = (next: boolean) => {
     setOpen(next);
-    if (next) { setName(category?.name ?? ""); setDescription(category?.description ?? ""); setColor(category?.color ?? colors[0]); setIcon(category?.icon); create.reset(); update.reset(); }
+    if (next) { setName(category?.name ?? ""); setDescription(category?.description ?? ""); setColor(category?.color ?? colors[0]); setIcon(category?.icon); setShowInGlobalSearch(category?.showInGlobalSearch ?? true); create.reset(); update.reset(); }
   };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) return;
-    const input = { name: name.trim(), description: description.trim(), color, icon };
+    const input = { name: name.trim(), description: description.trim(), color, icon, showInGlobalSearch };
     try {
       const saved = category ? await update.mutateAsync({ id: category.id, input }) : await create.mutateAsync(input);
       onSaved?.(saved);
@@ -45,6 +47,13 @@ export function CategoryFormDialog({ trigger, category, onSaved }: { trigger: Re
           <div className="space-y-2"><Label htmlFor="category-description">Description</Label><Input id="category-description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What belongs here?" maxLength={500} /></div>
           <div className="space-y-2"><Label>Optional icon</Label><div className="flex flex-wrap gap-2"><Button type="button" variant={!icon ? "default" : "outline"} onClick={() => setIcon(undefined)}>None</Button>{categoryIconNames.map((item) => <Button type="button" key={item} variant={icon === item ? "default" : "outline"} size="icon" onClick={() => setIcon(item)}><CategoryIcon name={item} size={17} /></Button>)}</div></div>
           <div className="space-y-2"><Label>Color</Label><div className="flex flex-wrap gap-2">{colors.map((item) => <button type="button" key={item} onClick={() => setColor(item)} className={cn("size-8 rounded-full border-4 border-white shadow-sm ring-offset-2", color === item && "ring-2 ring-primary")} style={{ background: item }} aria-label={item} />)}</div></div>
+          <div className="flex items-start justify-between gap-4 rounded-xl border p-4">
+            <div className="space-y-1">
+              <Label htmlFor="category-show-in-global-search">Show in global search</Label>
+              <p className="m-0 text-xs text-muted-foreground">You can still find memories in this category when searching inside it.</p>
+            </div>
+            <Switch id="category-show-in-global-search" checked={showInGlobalSearch} onCheckedChange={setShowInGlobalSearch} />
+          </div>
           {mutation.isError && <ErrorMessage message={getApiErrorMessage(mutation.error)} />}
           <Button className="w-full" disabled={mutation.isPending}>{mutation.isPending ? "Saving…" : category ? "Save changes" : "Create category"}</Button>
         </form>

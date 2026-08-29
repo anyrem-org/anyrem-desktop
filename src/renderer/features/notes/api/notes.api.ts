@@ -10,6 +10,8 @@ type ApiNote = {
   contentHtml: string;
   editorFormat: 'TIPTAP' | 'BLOCKNOTE';
   pinned: boolean;
+  showInGlobalSearch: boolean;
+  effectiveShowInGlobalSearch?: boolean;
   updatedAt: string;
   categories: Array<{ categoryId: string; category: { name: string; color: string } }>;
   relationsLeft: Array<{ rightNoteId: string }>;
@@ -31,6 +33,8 @@ const mapNote = (note: ApiNote): NoteRecord => ({
   ],
   updatedAt: note.updatedAt,
   pinned: note.pinned,
+  showInGlobalSearch: note.showInGlobalSearch,
+  effectiveShowInGlobalSearch: note.effectiveShowInGlobalSearch,
 });
 export const getNotes = (filters: NoteFilters) =>
   apiClient

@@ -20,6 +20,7 @@ type ApiCategory = {
   description: string | null;
   color: string;
   icon: string | null;
+  showInGlobalSearch: boolean;
   createdAt: string;
   updatedAt: string;
   _count?: { notes: number };
@@ -33,6 +34,7 @@ function mapCategory(item: ApiCategory): Category {
     color: item.color,
     icon: icons.has(item.icon as CategoryIcon) ? (item.icon as CategoryIcon) : 'Folder',
     noteCount: item._count?.notes ?? 0,
+    showInGlobalSearch: item.showInGlobalSearch,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
