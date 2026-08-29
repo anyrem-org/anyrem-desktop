@@ -5,7 +5,6 @@ import { BlockNoteView } from '@blocknote/shadcn';
 import { useCallback, useEffect } from 'react';
 import { uploadImage } from '../../uploads/uploads.api';
 
-import '@blocknote/core/fonts/inter.css';
 import '@blocknote/shadcn/style.css';
 
 export type NoteBlocks = Block<any, any, any>[];
